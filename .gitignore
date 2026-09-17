@@ -1,0 +1,15 @@
+# Composer dependencies (composer install se aa jati hain)
+/vendor/
+
+# Runtime files
+/temp/*
+/uploads/photos/*
+!temp/.gitkeep
+!uploads/photos/.gitkeep
+
+# OS / IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
