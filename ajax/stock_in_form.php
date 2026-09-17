@@ -11,7 +11,7 @@ if ($serial === '') jout(['success' => false, 'message' => 'Serial code chahiye.
 if ($qty <= 0)        jout(['success' => false, 'message' => 'Quantity 0 se badi honi chahiye.']);
 
 $name = trim($_POST['item_name'] ?? '');
-$fields = parseDescription($name !== '' ? $name : $serial);
+$fields = parseDescription($name !== '' ? $name : $serial, trim($_POST['category'] ?? ''));
 
 // Product pehle se nahi hai to register karo
 $product = ensureProduct($serial, $fields, $photo);
@@ -21,7 +21,7 @@ if (!$product) jout(['success' => false, 'message' => 'Product create nahi ho pa
 $conn->execute_query("UPDATE products SET current_stock = current_stock + ? WHERE serial_code = ?", [$qty, $serial]);
 
 $st = $conn->prepare("INSERT INTO stock_in (serial_code, item_name, quantity, photo, remark, source) VALUES (?,?,?,?,?,?)");
-$st->bind_param('ssisss', $serial, $fields['item_name'], $qty, $photo, $remark, 'manual');
+$st->bind_param('ssisss', $serial, $product['item_name'], $qty, $photo, $remark, 'manual');
 $st->execute();
 
 jout(['success' => true, 'message' => 'Stock In ho gaya: +' . $qty, 'product' => findProduct($serial)]);
