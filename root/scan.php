@@ -1,5 +1,4 @@
 <?php
-// root/scan.php — USB Scanner (Stock Out ONLY)
 $page = 'scan';
 ?>
 <!DOCTYPE html>
@@ -8,45 +7,38 @@ $page = 'scan';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scan — Stock Out — Stock System</title>
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 </head>
 <body>
 <div class="app">
-  <?php include '_layout.php'; ?>
+  <?php include 'sidebar.php'; ?>
 
   <main>
     <div class="pagehead">
       <div>
         <h1>USB Scanner — Stock Out</h1>
-        <p class="desc">Serial scan karo aur stock out karo</p>
+        <p class="desc">Lock open karo → USB scanner se scan karo → AUTO Stock Out. Manual ho to barcode type karke ENTER.</p>
       </div>
     </div>
 
     <div id="msgBox" class="msg-box"></div>
 
+    <!-- LOCK TOGGLE -->
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px;">
+      <button id="lockBtn" class="btn red" style="font-size:15px;padding:14px 26px">
+        🔒 LOCKED — Unlock karo
+      </button>
+      <span id="lockMsg" class="dash" style="font-size:13px">Lock band hai — scan ignore hoga. Unlock karke scan karo.</span>
+    </div>
+
     <!-- SCANNER ZONE -->
-    <div class="scan-box">
-      <div class="scan-title">📷 Scan Barcode (Enter daba kar)</div>
-      <input type="text" id="scanInput" autocomplete="off" placeholder="Scan barcode / type serial then ENTER" autofocus>
-      <div class="scan-hint">USB scanner automatic enter send karta hai. Product milte hi qty box focus hoga.</div>
+    <div class="scan-box" id="scanBox" onclick="$('scanInput').focus()">
+      <div class="scan-title">📷 Scan Barcode <span id="scanState"></span></div>
+      <input type="text" id="scanInput" autocomplete="off" placeholder="Scan barcode ya barcode type karke ENTER dabaao" autofocus>
+      <div class="scan-hint" id="scanHint">Pehle lock unlock karo, phir scan — auto stock out hoga.</div>
     </div>
 
-    <!-- Match / Not found -->
-    <div class="prod-card" id="prodCard">
-      <div class="p-name" id="pc_name"></div>
-      <div class="p-chips" id="pc_chips"></div>
-      <div style="display:flex;align-items:center;gap:18px;margin-top:14px;flex-wrap:wrap">
-        <div>
-          <div class="meta" id="pc_stock"></div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="number" id="scQty" value="1" min="1" style="width:80px;padding:9px;border-radius:8px;border:1px solid #DDE3EC;font-size:15px">
-          <input type="text" id="scRemark" placeholder="Remark (optional)" style="width:220px;padding:9px;border-radius:8px;border:1px solid #DDE3EC;font-size:13px">
-          <button class="btn red" id="btnConfirm">- Stock Out</button>
-        </div>
-      </div>
-    </div>
-
+    <!-- HISTORY -->
     <div class="panel" style="margin-top:22px">
       <h3>Last 10 Scans <span>(stock out)</span></h3>
       <div id="scanHistory"><span class="dash">Loading...</span></div>
@@ -54,72 +46,101 @@ $page = 'scan';
   </main>
 </div>
 
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=<?php echo filemtime('assets/js/app.js'); ?>"></script>
 <script>
-var currentProduct = null;
+var unlocked = false;   // Lock DEFAULT BAND
+var scanning = false;
 var historyCount = 0;
+var barcodeTimer = null; // USB scanner bina-Enter wale ke liye
 
-// --- Scanner main flow ---
-$('scanInput').addEventListener('keydown', function(e){
-  if (e.key === 'Enter'){
-    e.preventDefault();
-    var s = this.value.trim();
-    if (!s) return;
-    lookupScan(s);
+/* ===== LOCK / UNLOCK ===== */
+function setLock(open){
+  unlocked = open;
+  var btn = $('lockBtn');
+  if (open){
+    btn.className = 'btn green';
+    btn.innerHTML = '🔓 UNLOCKED — Lock karo';
+    $('lockMsg').textContent = 'Lock khula hai — scan karo, auto stock out hoga.';
+    $('scanBox').style.borderColor = 'var(--blue)';
+    $('scanHint').textContent = 'AB SCAN KARO — barcode aate hi auto stock out ho jayega.';
+  } else {
+    btn.className = 'btn red';
+    btn.innerHTML = '🔒 LOCKED — Unlock karo';
+    $('lockMsg').textContent = 'Lock band hai — scan ignore hoga. Unlock karke scan karo.';
+    $('scanBox').style.borderColor = '';
+    $('scanHint').textContent = 'Pehle lock unlock karo, phir scan ya barcode type karke ENTER.';
+    $('scanInput').value = '';
   }
-});
+  $('scanInput').focus();
+}
+$('lockBtn').addEventListener('click', function(){ setLock(!unlocked); });
 
-function lookupScan(s){
-  fetch('../ajax/search_product.php?serial='+encodeURIComponent(s))
+/* ===== SCAN PROCESS ===== */
+function processSerial(s){
+  if (scanning) return;
+  s = s.trim();
+  if (!s) return;
+
+  // Lock BAND hai => ignore
+  if (!unlocked){
+    showMsg('🔒 LOCKED hai — pehle Unlock karo, phir scan karo', 'danger');
+    clearBarcodeTimer();
+    $('scanInput').value = '';
+    $('scanInput').focus();
+    return;
+  }
+
+  scanning = true;
+  var fd = new FormData();
+  fd.append('serial', s);
+  fd.append('qty', 1);
+  fd.append('remark', '');
+
+  fetch('../ajax/stock_out_scanner.php', { method: 'POST', body: fd })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (d.success && d.data){
-        var p = d.data,
-            c = [], fields = ['model','poles','rating','voltage','ka','packaging','category','notes'];
-        fields.forEach(function(f){
-          if (p[f]) c.push('<span class="prod-chip"><b>'+f.toUpperCase()+'</b> '+esc(p[f])+'</span>');
-        });
-        $('pc_name').innerHTML = esc(p.item_name) + ' &nbsp;<span class="tag">'+esc(p.serial_code)+'</span>';
-        $('pc_chips').innerHTML = c.join('') + '<span class="prod-chip"><b>STOCK</b> '+p.current_stock+'</span>';
-        $('pc_stock').innerHTML = 'Available: <span class="prod-stock">'+p.current_stock+'</span>';
-        $('prodCard').classList.add('visible');
-        currentProduct = p;
-        $('scQty').value = 1; $('scRemark').value = '';
-        $('scanInput').value = '';
-        $('scQty').focus(); $('scQty').select();
+      if (d.success){
+        showMsg('✅ ' + s + ' — Stock Out ho gaya (-1)', 'success');
       } else {
-        showMsg('Product register nahi hai: ' + s, 'danger');
-        $('prodCard').classList.remove('visible');
-        currentProduct = null;
-        $('scanInput').value = '';
-        $('scanInput').focus();
+        showMsg('⚠️ ' + s + ' — ' + (d.message || 'Error'), 'danger');
       }
+      loadScanHistory(true);
+      $('scanInput').value = '';
+      scanning = false;
+      $('scanInput').focus();
+    })
+    .catch(function(e){
+      showMsg('Server error: ' + e, 'danger');
+      $('scanInput').value = '';
+      scanning = false;
     });
 }
 
-// --- Confirm stock out ---
-function confirmOut(){
-  if (!currentProduct) return;
-  var fd = new FormData();
-  fd.append('serial', currentProduct.serial_code);
-  fd.append('qty', $('scQty').value);
-  fd.append('remark', $('scRemark').value.trim());
-  postForm('../ajax/stock_out_scanner.php', fd, function(d){
-    if (d.success){
-      currentProduct = null;
-      $('prodCard').classList.remove('visible');
-      loadScanHistory(true);
-      $('scanInput').focus();
-    } else {
-      if (d.product) { currentProduct = d.product; } // stock shortage pe refresh
-      if (d.serial) { $('scanInput').value = d.serial; }
-    }
-  });
+/* USB scanner bina-Enter hon: typing rukne ke 150ms baad auto process */
+function clearBarcodeTimer(){ if (barcodeTimer){ clearTimeout(barcodeTimer); barcodeTimer = null; } }
+function armBarcodeTimer(){
+  clearBarcodeTimer();
+  var el = $('scanInput');
+  barcodeTimer = setTimeout(function(){
+    var v = el.value.trim();
+    if (v && !scanning){ el.blur(); processSerial(v); }
+  }, 150);
 }
-$('btnConfirm').addEventListener('click', confirmOut);
-$('scQty').addEventListener('keydown', function(e){ if (e.key === 'Enter') confirmOut(); });
 
-// --- History ---
+/* ENTER (manual ya scanner-with-Enter) */
+$('scanInput').addEventListener('keydown', function(e){
+  if (e.key === 'Enter'){
+    e.preventDefault();
+    clearBarcodeTimer();
+    var s = this.value.trim();
+    this.blur();
+    if (!s){ this.focus(); return; }
+    processSerial(s);
+  }
+});
+$('scanInput').addEventListener('input', function(){ armBarcodeTimer(); });
+
+/* ===== HISTORY ===== */
 function loadScanHistory(forceCount){
   ajax('../ajax/dashboard_stats.php', function(d){
     if (!d.success) return;
@@ -136,6 +157,7 @@ function loadScanHistory(forceCount){
     }).join('');
   });
 }
+setLock(false);  // Start: LOCKED
 loadScanHistory();
 </script>
 </body>

@@ -1,41 +1,59 @@
 <?php
-// ajax/stock_out_sheet.php — Sheet upload se Stock Out
+/* ============================================================
+   ajax/stock_out_sheet.php — Sheet upload se Stock Out (barcodes)
+   POST: file, selected (JSON of barcodes)
+   - Not registered barcode = fail
+   - Already consumed (e.g. uske parent carton isi batch mein out hua) = skip
+   - Baaki processStockOut normal checks (stock to restriction).
+   ============================================================ */
 require_once dirname(__DIR__) . '/config/db.php';
 
 $file = $_FILES['file'] ?? null;
-if (!$file || $file['error'] !== UPLOAD_ERR_OK) jout(['success' => false, 'message' => 'File upload nahi hui.']);
+if (!$file || $file['error'] !== UPLOAD_ERR_OK) jout(['success' => false, 'message' => 'File upload failed.']);
 
-$rows = sheetFileToRows($file);
-if (empty($rows)) jout(['success' => false, 'message' => 'File se koi data nahi mila.']);
-
+$rows  = sheetFileToRows($file);
+if (empty($rows)) jout(['success' => false, 'message' => 'No data found in file.']);
 $items = sheetRowsToItems($rows);
-if (empty($items)) jout(['success' => false, 'message' => 'Koi serial row nahi mili.']);
+if (empty($items)) jout(['success' => false, 'message' => 'No CARTON/BOX/PCS rows found.']);
 
-$done = 0;
-$skipped = [];
-$totalQty = 0;
+// Preview mein user ne jo select ki — sirf unhi process karo
+$selected = json_decode($_POST['selected'] ?? 'null', true);
+if (is_array($selected) && count($selected)) {
+    $allowed = array_flip($selected);
+    $items = array_values(array_filter($items, function ($it) use ($allowed) {
+        return isset($allowed[$it['barcode']]);
+    }));
+}
+if (empty($items)) jout(['success' => false, 'message' => 'No rows selected.']);
+
+$done   = 0;
+$fail   = 0;
+$skip   = 0;
+$totalPcs = 0;
+
 foreach ($items as $it) {
-    $serial = $it['serial'];
-    $qty = $it['qty'];
-    if ($serial === '' || $qty <= 0) continue;
+    $barcode = $it['barcode'];
 
-    $product = findProduct($serial);
-    if (!$product) { $skipped[] = $serial . ' (not found)'; continue; }
+    $bc = findBarcode($barcode);
+    if (!$bc) { $fail++; continue; }            // not registered
+    if ((int)$bc['is_consumed'] === 1) { $skip++; continue; }  // already consumed
 
-    $stock = (int)$product['current_stock'];
-    if ($stock < $qty) { $skipped[] = $serial . ' (stock ' . $stock . ')'; continue; }
-
-    $conn->execute_query("UPDATE products SET current_stock = current_stock - ? WHERE serial_code = ?", [$qty, $serial]);
-
-    $st = $conn->prepare("INSERT INTO stock_out (serial_code, item_name, quantity, remark, source) VALUES (?,?,?,?,?)");
-    $remark = 'sheet';
-    $st->bind_param('ssiss', $serial, $product['item_name'], $qty, $remark, 'sheet');
-    $st->execute();
-
-    $done++;
-    $totalQty += $qty;
+    $res = processStockOut($barcode, 'sheet', 'sheet');
+    if ($res['success']) {
+        $done++;
+        $totalPcs += $res['pcs'];
+    } else {
+        $fail++;
+    }
 }
 
-$msg = "Stock Out done: {$done} items, total -{$totalQty} qty";
-if (!empty($skipped)) $msg .= ' | Skipped: ' . implode(', ', array_slice($skipped, 0, 15));
-jout(['success' => true, 'message' => $msg, 'done' => $done, 'skipped' => $skipped]);
+jout([
+    'success' => true,
+    'message' => "Stock Out done: {$done} barcodes, -{$totalPcs} pcs total" .
+                 ($skip ? " ({$skip} already consumed, skipped)" : '') .
+                 ($fail ? " ({$fail} failed)" : ''),
+    'done'    => $done,
+    'skipped' => $skip,
+    'failed'  => $fail,
+    'total_pcs' => $totalPcs,
+]);

@@ -1,16 +1,26 @@
 <?php
-/**
- * config/db.php — DB connection + shared helpers
- * Har ajax file isko include karegi.
- */
-error_reporting(E_ALL);
-ini_set('display_errors', '0');
+/* ============================================================
+   config/db.php — Database connection + shared helper functions
+   Ye file har backend (ajax/*.php) mein require hoti hai.
 
+   System: CARTON -> BOX -> PCS hierarchy
+   Stock hamesha PIECES mein track hota hai.
+   ============================================================ */
+
+error_reporting(E_ALL);
+ini_set('display_errors', '0');   // Errors user ko nahi dikhate (clean UI)
+
+// Optional: 3rd-party libs (PhpSpreadsheet, PdfParser) agar installed hon
+$__autoload = dirname(__DIR__) . '/vendor/autoload.php';
+if (file_exists($__autoload)) require_once $__autoload;
+
+/* ---------- DATABASE CONFIG ---------- */
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'stock_system');
 
+// Connection banate hain
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
     header('Content-Type: application/json');
@@ -18,174 +28,333 @@ if ($conn->connect_error) {
 }
 $conn->set_charset('utf8mb4');
 
-/** JSON response bhejo aur exit */
+
+/* ============================================================
+   RESPONSE HELPER
+   ============================================================ */
+
+/**
+ * JSON response bhejta hai aur script rokh deta hai.
+ * Example: jout(['success' => true, 'message' => 'Done.']);
+ */
 function jout($arr) {
     header('Content-Type: application/json');
     echo json_encode($arr);
     exit;
 }
 
-/** Photo upload -> returns path (uploads/photos/xxx) ya '' */
-function uploadPhoto($file) {
-    if (!$file || $file['error'] !== UPLOAD_ERR_OK) return '';
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) return '';
-    $name = date('Ymd_His') . '_' . rand(1000, 9999) . '.' . $ext;
-    $dir = dirname(__DIR__) . '/uploads/photos/';
-    if (move_uploaded_file($file['tmp_name'], $dir . $name)) {
-        return 'uploads/photos/' . $name;
-    }
-    return '';
-}
 
-/** Product serial se dhoondho -> row array ya null */
-function findProduct($serial) {
+/* ============================================================
+   PRODUCT HELPERS (item_code se)
+   ============================================================ */
+
+/**
+ * item_code (product master code) se product dhundta hai.
+ * Example: item_code = "45125"
+ */
+function findProduct($item_code) {
     global $conn;
-    $s = trim($serial);
+    $s = trim($item_code);
     if ($s === '') return null;
-    $st = $conn->prepare("SELECT * FROM products WHERE serial_code = ? LIMIT 1");
+
+    $st = $conn->prepare("SELECT * FROM products WHERE item_code = ? LIMIT 1");
     $st->bind_param('s', $s);
     $st->execute();
     $r = $st->get_result();
     return $r ? $r->fetch_assoc() : null;
 }
 
-/** Product register karo agar missing ho. Khali serial reject. */
-function ensureProduct($serial, $fields, $photo = '') {
+/**
+ * Product ensure karta hai — exist to return, warna INSERT.
+ * @param string $item_code  product master code
+ * @param array  $fields     item_name, pcs_per_box, boxes_per_ctn, pcs_per_ctn
+ */
+function ensureProduct($item_code, $fields) {
     global $conn;
-    $serial = trim($serial);
-    if ($serial === '') return null;
-    $row = findProduct($serial);
+    $item_code = trim($item_code);
+    if ($item_code === '') return null;
+
+    $row = findProduct($item_code);
     if ($row) return $row;
 
-    $st = $conn->prepare("INSERT INTO products
-        (serial_code, item_name, category, model, poles, rating, voltage, ka, packaging, notes, photo)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)");
-    $st->bind_param('sssssssssss',
-        $serial,
-        $fields['item_name'],
-        $fields['category'],
-        $fields['model'],
-        $fields['poles'],
-        $fields['rating'],
-        $fields['voltage'],
-        $fields['ka'],
-        $fields['packaging'],
-        $fields['notes'],
-        $photo
-    );
+    $item_name     = trim($fields['item_name'] ?? '');
+    if ($item_name === '') $item_name = $item_code;
+
+    $pcs_per_box   = (int)($fields['pcs_per_box']   ?? 0);
+    $boxes_per_ctn = (int)($fields['boxes_per_ctn'] ?? 0);
+    $pcs_per_ctn   = (int)($fields['pcs_per_ctn']   ?? 0);
+
+    $st = $conn->prepare("INSERT INTO products (item_code, item_name, pcs_per_box, boxes_per_ctn, pcs_per_ctn) VALUES (?,?,?,?,?)");
+    $st->bind_param('ssiii', $item_code, $item_name, $pcs_per_box, $boxes_per_ctn, $pcs_per_ctn);
     if (!$st->execute()) return null;
-    return findProduct($serial);
+
+    return findProduct($item_code);
+}
+
+
+/* ============================================================
+   BARCODE HELPERS (CARTON / BOX / PCS)
+   ============================================================ */
+
+/**
+ * Barcode se detail dhundta hai (barcodes + uski product info).
+ * @return array|null  barcode row: level, pcs_qty, is_consumed, item_code, item_name, current_stock_pcs, ...
+ */
+function findBarcode($barcode) {
+    global $conn;
+    $b = trim($barcode);
+    if ($b === '') return null;
+
+    $st = $conn->prepare("
+        SELECT b.*, p.item_name, p.current_stock_pcs, p.pcs_per_box, p.boxes_per_ctn, p.pcs_per_ctn
+        FROM barcodes b
+        JOIN products p ON b.item_code = p.item_code
+        WHERE b.barcode = ? LIMIT 1
+    ");
+    $st->bind_param('s', $b);
+    $st->execute();
+    $r = $st->get_result();
+    return $r ? $r->fetch_assoc() : null;
 }
 
 /**
- * Description parse -> structured columns
- * e.g. "NXB-63 1P C2A 6KA (180Pcs Ctn)"
- *      "NOARK EX9UEP 20 1P 750 EU"
- *      "NXBLE-63 2P C16A 30mA 6KA"
+ * Barcode ke prefix se level detect karta hai:
+ *   L... -> CARTON | B... -> BOX | P... -> PCS  (default PCS)
  */
-function parseDescription($desc, $category = '') {
-    $d = [
-        'category'  => $category,
-        'item_name' => trim($desc),
-        'model'     => '',
-        'poles'     => '',
-        'rating'    => '',
-        'voltage'   => '',
-        'ka'        => '',
-        'packaging' => '',
-        'notes'     => '',
-    ];
-    $rest = trim($desc);
-    if ($rest === '') return $d;
-
-    // Packaging: "(180Pcs Ctn)"
-    if (preg_match('/\(([^()]{1,60})\)/', $rest, $m)) {
-        $d['packaging'] = $m[1];
-        $rest = trim(str_replace($m[0], '', $rest));
-    }
-
-    // KA: 6KA / 10KA / 25KA
-    if (preg_match('/\b(\d+(?:\.\d+)?)\s*KA\b/i', $rest, $m)) {
-        $d['ka'] = strtoupper($m[1]) . 'KA';
-        $rest = trim(preg_replace('/\b(\d+(?:\.\d+)?)\s*KA\b/i', '', $rest));
-    }
-
-    // Voltage: 220V / 500V / 1000V / 380V
-    if (preg_match('/\b(\d+(?:\.\d+)?)\s*V\b/i', $rest, $m)) {
-        $d['voltage'] = strtoupper($m[1]) . 'V';
-        $rest = trim(preg_replace('/\b(\d+(?:\.\d+)?)\s*V\b/i', '', $rest));
-    }
-
-    // Poles: 1P/2P/3P/4P
-    if (preg_match('/\b([1-4])\s*P\b/', $rest, $m)) {
-        $d['poles'] = $m[1] . 'P';
-    }
-
-    // Rating: C2A / C32A / 100A / 40KA-385V wala (short circuit)
-    if (preg_match('/\bC\d+(?:\.\d+)?A\b/i', $rest, $m)) {
-        $d['rating'] = strtoupper($m[0]);
-        $rest = trim(preg_replace('/\bC\d+(?:\.\d+)?A\b/i', '', $rest));
-    } elseif (preg_match('/\b(\d+(?:\.\d+)?)\s*A\b(?!\w)/', $rest, $m)) {
-        $d['rating'] = strtoupper($m[1]) . 'A';
-        $rest = trim(preg_replace('/\b(\d+(?:\.\d+)?)\s*A\b(?!\w)/', '', $rest));
-    } elseif (preg_match('/\b\d+(?:\.\d+)?\s*KA\/\d+V\b/i', $rest, $m)) {
-        $d['rating'] = strtoupper($m[0]);
-        $rest = trim(str_replace($m[0], '', $rest));
-    }
-
-    // Model: aage ke 1-3 tokens jo feature token na ho
-    $tokens = preg_split('/\s+/', $rest);
-    $modelParts = [];
-    foreach ($tokens as $t) {
-        if (count($modelParts) >= 3) break;
-        if (preg_match('/^([1-4])P$/', $t)) break;
-        if (preg_match('/^(C?\d+(?:\.\d+)?A|\d+(?:\.\d+)?KA|\d+(?:\.\d+)?V|\d+mA|\d+\/\d+A)$/i', $t)) break;
-        if (preg_match('/^[\d\/]+Hz$/i', $t)) break;
-        $modelParts[] = $t;
-    }
-    $d['model'] = implode(' ', $modelParts);
-    $rest = trim(str_replace($d['model'], '', $rest));
-
-    // Notes: bacha hua (30mA, 50/60Hz, D/Outlet, CCC, 50C, EU, PATI ...)
-    $d['notes'] = trim($rest);
-    $d['notes'] = preg_replace('/\s+/', ' ', $d['notes']);
-
-    return $d;
+function levelFromBarcode($barcode) {
+    $b = strtoupper(trim($barcode));
+    if ($b !== '' && $b[0] === 'L') return 'CARTON';
+    if ($b !== '' && $b[0] === 'B') return 'BOX';
+    if ($b !== '' && $b[0] === 'P') return 'PCS';
+    return 'PCS';
 }
 
-/** Text/CSV lines -> rows [serial, description, qty] */
+/**
+ * Barcode ensure karta hai — exist to same return, warna INSERT.
+ * pcs_qty nahi diya to level ke hisaab se product se compute hota hai:
+ *   CARTON = pcs_per_ctn | BOX = pcs_per_box | PCS = 1
+ * @param array $fields  item_code, level, parent_barcode, pcs_qty
+ */
+function ensureBarcode($barcode, $fields) {
+    global $conn;
+    $barcode = trim($barcode);
+    if ($barcode === '') return null;
+
+    $row = findBarcode($barcode);
+    if ($row) return $row;   // duplicate barcode → skip
+
+    $item_code = trim($fields['item_code'] ?? '');
+    if ($item_code === '') return null;
+
+    $product = findProduct($item_code);
+    if (!$product) return null;   // product pehle banna chahiye
+
+    $level = strtoupper(trim($fields['level'] ?? 'PCS'));
+    if (!in_array($level, ['CARTON', 'BOX', 'PCS'], true)) $level = 'PCS';
+
+    // pcs_qty: explicit ya level se default
+    $pcs = (int)($fields['pcs_qty'] ?? 0);
+    if ($pcs < 1) {
+        if ($level === 'CARTON') $pcs = (int)$product['pcs_per_ctn'];
+        elseif ($level === 'BOX') $pcs = (int)$product['pcs_per_box'];
+        else $pcs = 1;
+        if ($pcs < 1) $pcs = 1;
+    }
+
+    $parent = trim($fields['parent_barcode'] ?? '');
+
+    $st = $conn->prepare("INSERT INTO barcodes (barcode, level, item_code, parent_barcode, pcs_qty) VALUES (?,?,?,?,?)");
+    $st->bind_param('ssssi', $barcode, $level, $item_code, $parent, $pcs);
+    if (!$st->execute()) return null;
+
+    return findBarcode($barcode);
+}
+
+
+/* ============================================================
+   CONSUMED / HIERARCHY HELPER
+   ============================================================ */
+
+/**
+ * Ek barcode + uske saare children ko is_consumed = 1 karta hai.
+ * Recursive: CARTON -> BOX -> PCS tak neeche chalta hai.
+ */
+function consumeChildren($barcode) {
+    global $conn;
+    $barcode = trim($barcode);
+    if ($barcode === '') return;
+
+    // Khud ko consume karo
+    $s = $conn->prepare("UPDATE barcodes SET is_consumed = 1 WHERE barcode = ?");
+    $s->bind_param('s', $barcode);
+    $s->execute();
+
+    // Direct children dhoondo aur unhe bhi consume karo
+    $c = $conn->prepare("SELECT barcode FROM barcodes WHERE parent_barcode = ?");
+    $c->bind_param('s', $barcode);
+    $c->execute();
+    $r = $c->get_result();
+    while ($row = $r->fetch_assoc()) {
+        consumeChildren($row['barcode']);
+    }
+}
+
+/**
+ * Stock IN process karta hai:
+ *   barcode lookup → level se pcs_qty → products += qty → stock_in record → is_consumed = 0
+ * @return array ['success'=>bool, 'message'=>string, ...]
+ */
+function processStockIn($barcode, $source, $remark, $qty = 0) {
+    global $conn;
+    $barcode = trim($barcode);
+    if ($barcode === '') return ['success' => false, 'message' => 'Barcode is required.'];
+
+    $bc = findBarcode($barcode);
+    if (!$bc) return ['success' => false, 'message' => 'Barcode not registered. Please register the sheet first.'];
+
+     $pcs = (int)$qty > 0 ? (int)$qty : (int)$bc['pcs_qty'];
+    if ($pcs < 1) return ['success' => false, 'message' => 'Barcode has invalid pcs qty.'];
+
+    // Product ka stock badhao
+    $upd = $conn->prepare("UPDATE products SET current_stock_pcs = current_stock_pcs + ? WHERE item_code = ?");
+    $upd->bind_param('is', $pcs, $bc['item_code']);
+    $upd->execute();
+
+    // Transaction record
+    $st = $conn->prepare("INSERT INTO stock_in (barcode, level, item_code, item_name, pcs_qty, source, remark) VALUES (?,?,?,?,?,?,?)");
+    $remark = trim($remark) !== '' ? $remark : 'Stock In';
+    $st->bind_param('ssssiss', $barcode, $bc['level'], $bc['item_code'], $bc['item_name'], $pcs, $source, $remark);
+    $st->execute();
+
+    // Stock in ke baad sab available — is barcode + uske children un-consume karo
+    // (children bhi 0 taake box/pcs phir se bech sakein)
+    $r = $conn->prepare("UPDATE barcodes SET is_consumed = 0 WHERE barcode = ?");
+    $r->bind_param('s', $barcode);
+    $r->execute();
+    consumeChildrenUnset($barcode);
+
+    return [
+        'success' => true,
+        'message' => 'Stock In: +' . $pcs . ' pcs (' . $bc['level'] . ')',
+        'barcode' => $barcode,
+        'level'   => $bc['level'],
+        'pcs'     => $pcs,
+        'item_code' => $bc['item_code'],
+    ];
+}
+
+/**
+ * processStockIn ke liye — barcode + children ka is_consumed = 0
+ */
+function consumeChildrenUnset($barcode) {
+    global $conn;
+    $barcode = trim($barcode);
+    if ($barcode === '') return;
+
+    $s = $conn->prepare("UPDATE barcodes SET is_consumed = 0 WHERE barcode = ?");
+    $s->bind_param('s', $barcode);
+    $s->execute();
+
+    $c = $conn->prepare("SELECT barcode FROM barcodes WHERE parent_barcode = ?");
+    $c->bind_param('s', $barcode);
+    $c->execute();
+    $r = $c->get_result();
+    while ($row = $r->fetch_assoc()) {
+        consumeChildrenUnset($row['barcode']);
+    }
+}
+
+/**
+ * Stock OUT process karta hai:
+ *   barcode lookup → not registered/throttle checks → products -= qty
+ *   → stock_out record → self + children is_consumed = 1
+ * @return array ['success'=>bool, 'message'=>string, ...]
+ */
+function processStockOut($barcode, $source, $remark) {
+    global $conn;
+    $barcode = trim($barcode);
+    if ($barcode === '') return ['success' => false, 'message' => 'Barcode is required.'];
+
+    $bc = findBarcode($barcode);
+    if (!$bc) return ['success' => false, 'message' => 'Barcode not registered.'];
+
+    if ((int)$bc['is_consumed'] === 1) {
+        return ['success' => false, 'message' => 'Barcode already consumed.', 'consumed' => true];
+    }
+
+    $pcs = (int)$bc['pcs_qty'];
+    if ($pcs < 1) return ['success' => false, 'message' => 'Barcode has invalid pcs qty.'];
+
+    $stock = (int)$bc['current_stock_pcs'];
+    if ($stock < $pcs) {
+        return ['success' => false, 'message' => 'Insufficient stock. Available: ' . $stock . ' pcs'];
+    }
+
+    // Product ka stock ghatao
+    $upd = $conn->prepare("UPDATE products SET current_stock_pcs = current_stock_pcs - ? WHERE item_code = ?");
+    $upd->bind_param('is', $pcs, $bc['item_code']);
+    $upd->execute();
+
+    // Transaction record
+    $st = $conn->prepare("INSERT INTO stock_out (barcode, level, item_code, item_name, pcs_qty, source, remark) VALUES (?,?,?,?,?,?,?)");
+    $remark = trim($remark) !== '' ? $remark : 'Stock Out';
+    $st->bind_param('ssssiss', $barcode, $bc['level'], $bc['item_code'], $bc['item_name'], $pcs, $source, $remark);
+    $st->execute();
+
+    // Barcode aur uske saare children consumed mark karo
+    consumeChildren($barcode);
+
+    return [
+        'success'   => true,
+        'message'   => 'Stock Out: -' . $pcs . ' pcs (' . $bc['level'] . ')',
+        'barcode'   => $barcode,
+        'level'     => $bc['level'],
+        'pcs'       => $pcs,
+        'item_code' => $bc['item_code'],
+        'item_name' => $bc['item_name'],
+    ];
+}
+
+
+/* ============================================================
+   SHEET PARSING — raw cells (rows = array of cell strings)
+   Nayi sheet ka expected column order:
+   Level | Parent Barcode | Item code | Item name | Barcode
+   | Qty Carton | Total Pcs | Boxes pr Ctn | Pcs pr Box | Status
+   ============================================================ */
+
+/**
+ * Plain text ko rows (raw cells) mein todta hai.
+ * Tab, pipe (|) ya multiple-spaces se columns alag hote hain.
+ * NOTE: empty cells preserve hote hain (hierarchy sheet mein CARTON ka
+ * parent blank hota hai — column order wahi rehna chahiye).
+ */
 function sheetRowsFromText($text) {
     $rows = [];
-    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $text = str_replace(["\r\n", "\r"], "\n", $text);   // sab newlines ko \n banao
+
     foreach (explode("\n", $text) as $line) {
         $line = trim($line);
         if ($line === '') continue;
-        $parts = [];
 
-        $tabs = preg_split('/\t+/', $line);
-        $pipes = preg_split('/\s*\|\s*/', $line);
-        $spaces = preg_split('/\s{2,}/', $line);
+        // Unified split: SINGLE tab | pipe (surrounding spaces sahit) | 2+ spaces
+        // NOTE: tab ko "\t" (single) rakho — "\t+" ho to consecutive tabs ke
+        // beech ka EMPTY cell (CARTON ka blank parent) collapse ho jata hai,
+        // jisse saare columns shift ho jate hain.
+        $parts = preg_split('/\t|(?:\s*\|\s*)|\s{2,}/', $line);
+        $parts = array_map('trim', $parts);
 
-        foreach ([$tabs, $pipes, $spaces] as $set) {
-            $set = array_values(array_filter(array_map('trim', $set), function ($p) { return $p !== ''; }));
-            if (count($set) >= 2) { $parts = $set; break; }
-        }
+        // Consecutive delimiters ke beech empty cells hatate nahi.
+        // Sirf aakhri khaaliyaan (trailing) hatao jo split se bani hon.
+        while (count($parts) && end($parts) === '') array_pop($parts);
+
         if (count($parts) < 2) continue;
-
-        $serial = $parts[0];
-        $desc = '';
-        for ($i = 1; $i < count($parts); $i++) $desc .= ($desc ? ' ' : '') . $parts[$i];
-        $qty = 1;
-        if (preg_match('/\b(\d{1,6})\b\s*$/', $desc, $qm)) {
-            $qty = (int)$qm[1];
-        }
-        $rows[] = ['serial' => $serial, 'description' => $desc, 'qty' => $qty];
+        $rows[] = $parts;
     }
     return $rows;
 }
 
-/** DOCX -> text */
+/** .docx file ka text nikaalta hai (ZipArchive se) */
 function docxToText($path) {
     $text = '';
     $zip = new ZipArchive();
@@ -196,17 +365,18 @@ function docxToText($path) {
         $xml = str_replace(['<w:p>', '</w:p>', '<w:tr>', '</w:tr>'], ["\n", "\n", "\n", "\n"], $xml);
         if (preg_match_all('/<w:t[^>]*>([^<]*)<\/w:t>/', $xml, $m)) $text = implode('', $m[1]);
     }
-    $text = preg_replace('/[^\x20-\x7E\n\t]/', '', $text);
     return $text;
 }
 
-/** XLSX -> rows */
+/** .xlsx file (bina lib) raw cells mein todta hai — XMLReader streaming, handles shared + inline strings */
 function xlsxToRows($path) {
-    if (!class_exists('ZipArchive')) return [];
+    if (!class_exists('XMLReader') || !class_exists('ZipArchive')) return [];
     $rows = [];
     $zip = new ZipArchive();
-    if ($zip->open($path) !== true) return $rows;
+    $abs = realpath($path);
+    if ($zip->open($path) !== true) return [];
 
+    // Shared strings (xlsx mein text wahan store hota hai)
     $shared = [];
     $ss = $zip->getFromName('xl/sharedStrings.xml');
     if ($ss !== false && preg_match_all('/<si[^>]*>(.*?)<\/si>/s', $ss, $m)) {
@@ -216,113 +386,435 @@ function xlsxToRows($path) {
             $shared[] = $val;
         }
     }
+    unset($ss);
 
+    // Pehli 10 sheets tak scan — XMLReader over zip:// stream (true streaming, fast, low memory)
     for ($i = 1; $i <= 10; $i++) {
-        $sheetXml = $zip->getFromName('xl/worksheets/sheet' . $i . '.xml');
-        if ($sheetXml === false) break;
-        if (preg_match_all('/<row[^>]*>(.*?)<\/row>/s', $sheetXml, $rm)) {
-            foreach ($rm[1] as $rxml) {
-                $vals = [];
-                if (preg_match_all('/<c[^>]*?(?:t="(\w+)")?[^>]*>(?:<v>([^<]*)<\/v>)?/', $rxml, $cm, PREG_SET_ORDER)) {
-                    foreach ($cm as $c) {
-                        $v = isset($c[2]) ? $c[2] : '';
-                        if (isset($c[1]) && $c[1] === 's' && isset($shared[(int)$v])) $v = $shared[(int)$v];
-                        $vals[] = trim($v);
+        $reader = new XMLReader();
+        $ok = @$reader->open('zip://' . str_replace('\\', '/', $abs) . '#xl/worksheets/sheet' . $i . '.xml');
+        if (!$ok) break;
+
+        $curRow = [];
+        while ($reader->read()) {
+            if ($reader->nodeType === XMLReader::ELEMENT && $reader->localName === 'row') {
+                $curRow = [];
+            } elseif ($reader->nodeType === XMLReader::ELEMENT && $reader->localName === 'c') {
+                $type  = $reader->getAttribute('t') ?? '';
+                $v     = '';
+                while ($reader->read()) {
+                    if ($reader->nodeType === XMLReader::ELEMENT && $reader->localName === 't') {
+                        $v .= $reader->readString();
+                    } elseif ($reader->nodeType === XMLReader::ELEMENT && $reader->localName === 'v') {
+                        $v .= $reader->readString();
+                    } elseif ($reader->nodeType === XMLReader::END_ELEMENT && $reader->localName === 'c') {
+                        break;
                     }
                 }
-                $vals = array_values(array_filter($vals, function ($v) { return $v !== ''; }));
-                if (count($vals) < 2) continue;
-                $rows[] = ['serial' => $vals[0], 'description' => $vals[1], 'qty' => (isset($vals[2]) && is_numeric($vals[2])) ? (int)$vals[2] : 1];
+                if ($type === 's' && $v !== '' && ctype_digit($v)) {
+                    $v = $shared[(int)$v] ?? '';
+                }
+                $curRow[] = trim($v);
+            } elseif ($reader->nodeType === XMLReader::END_ELEMENT && $reader->localName === 'row') {
+                if (count($curRow)) {
+                    $nonEmpty = count(array_filter($curRow, function ($x) { return $x !== ''; }));
+                    if ($nonEmpty >= 2) $rows[] = $curRow;
+                }
+                $curRow = [];
             }
         }
+        $reader->close();
+
+        // hierarchy sheet pehle sheet mein hoti hai — data mil gaya to bas
+        if (!empty($rows)) break;
     }
     $zip->close();
     return $rows;
 }
 
 /**
- * Uploaded file ko rows mein badlo (pdf/docx/xls/xlsx/csv/txt)
- * Returns [serial, description, qty]
+ * Uploaded file (csv/txt/xlsx/docx/pdf) ko RAW cell rows mein convert karta hai.
+ * @return array  array of arrays (every row = cells list)
  */
 function sheetFileToRows($file) {
     if (!$file || $file['error'] !== UPLOAD_ERR_OK) return [];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $tmp = $file['tmp_name'];
 
-    // Vendor libraries (agar installed hain)
-    $autoload = dirname(__DIR__) . '/vendor/autoload.php';
-    $vendorLoaded = file_exists($autoload);
-
-    if ($ext === 'pdf' && $vendorLoaded && class_exists('Smalot\PdfParser\Parser')) {
+    // PDF — agar Smalot\PdfParser installed hai
+    if ($ext === 'pdf' && class_exists('Smalot\PdfParser\Parser')) {
         $parser = new \Smalot\PdfParser\Parser();
         $pdf = $parser->parseFile($tmp);
         return sheetRowsFromText($pdf->getText());
-    } elseif ($ext === 'docx') {
+    }
+
+    // DOCX
+    if ($ext === 'docx') {
         return sheetRowsFromText(docxToText($tmp));
-    } elseif (in_array($ext, ['xls', 'xlsx']) && $vendorLoaded && class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
-        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader(strtoupper($ext));
+    }
+
+    // XLSX — FAST XMLReader parser (hamesha, PhpSpreadsheet slow hai)
+    if ($ext === 'xlsx') {
+        return xlsxToRows($tmp);
+    }
+
+    // XLS (legacy binary) — sirf iske liye PhpSpreadsheet
+    if ($ext === 'xls' && class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
+        $readerType = $ext === 'xlsx' ? 'Xlsx' : 'Xls';
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($readerType);
+        $reader->setReadDataOnly(true);
         $wb = $reader->load($tmp);
         $rows = [];
-        foreach ($wb->getActiveSheet()->toArray() as $r) {
-            $cells = array_values(array_filter(array_map('trim', $r), function ($v) { return $v !== ''; }));
-            if (count($cells) < 2) continue;
-            $rows[] = ['serial' => $cells[0], 'description' => $cells[1], 'qty' => (isset($cells[2]) && is_numeric($cells[2])) ? (int)$cells[2] : 1];
+        foreach ($wb->getActiveSheet()->toArray(null, true, true, true) as $r) {
+            $cells = array_map('trim', array_values($r));
+            while (count($cells) && end($cells) === '') array_pop($cells);
+            $nonEmpty = count(array_filter($cells, function ($v) { return $v !== ''; }));
+            if ($nonEmpty < 2) continue;
+            $rows[] = $cells;
         }
+        $wb->disconnectWorksheets();
         return $rows;
-    } elseif ($ext === 'xlsx') {
-        return xlsxToRows($tmp);
-    } elseif ($ext === 'csv') {
+    }
+
+    // CSV
+    if ($ext === 'csv') {
         $rows = [];
         $handle = fopen($tmp, 'r');
         if ($handle) {
             while (($line = fgetcsv($handle)) !== false) {
-                $cells = array_values(array_filter(array_map('trim', $line), function ($v) { return $v !== ''; }));
-                if (count($cells) < 2) continue;
-                $rows[] = ['serial' => $cells[0], 'description' => $cells[1], 'qty' => (isset($cells[2]) && is_numeric($cells[2])) ? (int)$cells[2] : 1];
+                $cells = array_map('trim', array_values($line));
+                while (count($cells) && end($cells) === '') array_pop($cells);
+                $nonEmpty = count(array_filter($cells, function ($v) { return $v !== ''; }));
+                if ($nonEmpty < 2) continue;
+                $rows[] = $cells;
             }
             fclose($handle);
         }
         return $rows;
-    } elseif ($ext === 'txt') {
+    }
+
+    // Plain text
+    if ($ext === 'txt') {
         return sheetRowsFromText(file_get_contents($tmp));
     }
-    return [];
+
+    return [];   // Unknown format
+}
+
+/* ============================================================
+   AUTO COLUMN DETECTION — headers se columns identify
+   "Item ID" | "Item Code" | "Product Code" | "Code" ...
+   "Items Name" | "Product Name" | "Description" | "Name" ...
+   "Barcode" | "Bar-Code" | "Serial No." ...
+   Sab detect ho jata hai. Header na mile to purana positional
+   fallback (exact column order) use hota hai.
+   ============================================================ */
+
+/**
+ * Header text ko canonical banata hai: lowercase + sirf alphanumeric.
+ * "Item ID" -> itemid | "Pcs per Box" -> pcsperbox | "Bar-Code" -> barcode
+ */
+function normalizeSheetHeader($h) {
+    return strtolower(preg_replace('/[^a-z0-9]/i', '', trim($h)));
 }
 
 /**
- * Rows -> items (category headers handle karta hai + multi-barcode split)
- * Return items with: serial, item_name, category, model, poles, rating,
- *                    voltage, ka, packaging, notes, qty
+ * Normalized header ko ek role assign karta hai.
+ * ORDER IMPORTANT: pehle specific (parent/barcode), phir generic (code/id/name).
  */
-function sheetRowsToItems($rows) {
-    $items = [];
-    $cat = '';
-    foreach ($rows as $r) {
-        $serial = trim($r['serial']);
-        $desc = trim($r['description']);
-        if ($serial === '') {
-            if ($desc !== '') $cat = trim($desc, ' .');
-            continue;
-        }
-        $item = parseDescription($desc, $cat);
-        $qty = (isset($r['qty']) && $r['qty'] > 0) ? (int)$r['qty'] : 1;
+function scoreSheetHeader($norm) {
+    if ($norm === '') return null;
 
-        $serials = [trim($serial)];
-        if (strpos($serial, '/') !== false) {
-            $serials = [];
-            foreach (explode('/', $serial) as $s) {
-                $s = trim($s);
-                if ($s !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $s)) $serials[] = $s;
+    // PARENT — sabse pehle taaki "Parent Barcode" barcode na bane
+    if (strpos($norm, 'parent') !== false) return 'parent';
+
+    // BARCODE — specific
+    if (strpos($norm, 'barcode') !== false) return 'barcode';   // barcode, bar-code, barcode no
+    if (strpos($norm, 'serial') !== false) return 'barcode';    // serial no, sr-no, serialnumber
+
+    // ITEM CODE / ITEM ID (specific pehle, 'code'/'id' generic last)
+    foreach (['itemcode', 'itemid', 'productcode', 'productid', 'partno', 'materialcode', 'sku', 'code', 'id'] as $k) {
+        if (strpos($norm, $k) !== false) return 'item_code';
+    }
+
+    // ITEM NAME
+    foreach (['itemname', 'itemsname', 'productname', 'description', 'name', 'item', 'product'] as $k) {
+        if (strpos($norm, $k) !== false) return 'item_name';
+    }
+
+    // LEVEL
+    if (strpos($norm, 'level') !== false) return 'level';
+
+    // BOXES PR CTN | QTY CARTON (dono ek hi value hoti hai)
+    foreach (['boxesprctn', 'boxprctn', 'boxesctn', 'boxctn', 'boxes', 'qtycarton', 'qtyctn', 'cartonqty'] as $k) {
+        if (strpos($norm, $k) !== false) return 'boxes_per_ctn';
+    }
+
+    // PCS PR BOX
+    foreach (['pcsperbox', 'pcsprbox', 'pcsbox', 'perbox', 'pcsox'] as $k) {
+        if (strpos($norm, $k) !== false) return 'pcs_per_box';
+    }
+
+    // TOTAL PCS
+    foreach (['totalpcs', 'pcsqty', 'totalkgs', 'ctnqty', 'qty'] as $k) {
+        if (strpos($norm, $k) !== false) return 'total_pcs';
+    }
+
+    // STATUS
+    if (strpos($norm, 'status') !== false) return 'status';
+
+    return null;
+}
+
+/**
+ * Rows ke pehle rows mein se header row dhundta hai.
+ * Header tabhi maana jata hai jab ek hi row mein Barcode + Item Code + Item Name
+ * wale columns milein (strong signal — data row aisa nahi hota).
+ *
+ * @return array|null  role => column index, + headerRow, rowLength (ya null)
+ */
+function detectSheetColumns($rows) {
+    $limit = min(count($rows), 10);
+    for ($ri = 0; $ri < $limit; $ri++) {
+        $rowRoles = [];        // role => col index (is sirf rah row mein)
+        $seenHere = [];        // is row ke already-consumed normalized headers
+        $core     = ['barcode' => null, 'item_code' => null, 'item_name' => null];
+
+        foreach ($rows[$ri] as $ci => $cell) {
+            if ($ci > 15) continue;   // max 16 columns scan
+            $norm = normalizeSheetHeader($cell);
+            if ($norm === '' || strlen($norm) < 2) continue;
+            if (isset($seenHere[$norm])) continue;   // duplicate normalized header
+            $seenHere[$norm] = true;
+
+            $role = scoreSheetHeader($norm);
+            if (!$role || isset($rowRoles[$role])) continue;
+            $rowRoles[$role] = $ci;
+            if (in_array($role, ['barcode', 'item_code', 'item_name'], true)) {
+                $core[$role] = $ci;
             }
-            if (!$serials) $serials[] = trim($serial);
         }
 
-        foreach ($serials as $s) {
-            $cp = $item;
-            $cp['serial'] = $s;
-            $cp['qty'] = $qty;
-            $items[] = $cp;
+        if ($core['barcode'] !== null && $core['item_code'] !== null && $core['item_name'] !== null) {
+            $rowRoles['headerRow'] = $ri;
+            $rowRoles['rowLength'] = count($rows[$ri]);
+            return $rowRoles;
         }
     }
+    return null;
+}
+
+/**
+ * Detect hue column map se rows ko items mein convert karta hai.
+ * Title rows + header row skip hote hain. Level barcode prefix se auto-detect.
+ * @return array  same shape as sheetRowsToHierarchyItems()
+ */
+function mapRowsToItems($rows, $map) {
+    $items  = [];
+    $levels = ['CARTON', 'BOX', 'PCS'];
+
+    $gl = function ($cells, $role) use ($map) {
+        if (!isset($map[$role]) || !isset($cells[$map[$role]])) return '';
+        return trim($cells[$map[$role]]);
+    };
+
+    foreach ($rows as $ri => $cells) {
+        if ($ri <= $map['headerRow']) continue;   // title rows + header row skip
+
+        $barcode   = $gl($cells, 'barcode');
+        $item_code = $gl($cells, 'item_code');
+        if ($barcode === '' || $item_code === '') continue;
+
+        // Data cell agar header jaisa ho (typo/extra header line) → skip
+        $bn = normalizeSheetHeader($barcode);
+        if ($bn !== '' && in_array($bn, ['barcode', 'itemcode', 'itemid', 'itemname', 'itemsname', 'name', 'serialno', 'serial'], true)) {
+            continue;
+        }
+
+        $level = strtoupper($gl($cells, 'level'));
+        if (!in_array($level, $levels, true)) $level = levelFromBarcode($barcode);
+
+        $boxes_per_ctn = (int)$gl($cells, 'boxes_per_ctn');
+        $pcs_per_box   = (int)$gl($cells, 'pcs_per_box');
+        $pcs_qty       = (int)$gl($cells, 'total_pcs');
+
+        if ($pcs_qty < 1 && $level === 'PCS') $pcs_qty = 1;
+        if ($pcs_qty < 1 && $level === 'CARTON' && $boxes_per_ctn > 0 && $pcs_per_box > 0) {
+            $pcs_qty = $boxes_per_ctn * $pcs_per_box;
+        }
+
+        $item_name = $gl($cells, 'item_name');
+        if ($item_name === '') $item_name = $item_code;
+
+        $items[] = [
+            'level'          => $level,
+            'parent_barcode' => $gl($cells, 'parent'),
+            'item_code'      => $item_code,
+            'item_name'      => $item_name,
+            'barcode'        => $barcode,
+            'pcs_qty'        => $pcs_qty,
+            'boxes_per_ctn'  => $boxes_per_ctn,
+            'pcs_per_box'    => $pcs_per_box,
+        ];
+    }
     return $items;
+}
+
+/**
+ * Sheet rows → items: pehle header auto-detection, warna positional fallback.
+ */
+function sheetRowsToItems($rows) {
+    $map = detectSheetColumns($rows);
+    if ($map) {
+        $items = mapRowsToItems($rows, $map);
+        if (!empty($items)) return $items;
+    }
+    $items = sheetRowsToHierarchyItems($rows);
+    if (!empty($items)) return $items;
+    return sheetRowsToSimpleItems($rows);
+}
+
+/**
+ * Raw sheet rows ko hierarchy items mein convert karta hai.
+ * Sirf CARTON / BOX / PCS rows liye jate hain (headers/junk skip).
+ *
+ * @return array  [[ level, parent_barcode, item_code, item_name, barcode,
+ *                   pcs_qty, boxes_per_ctn, pcs_per_box ]]
+ */
+function sheetRowsToHierarchyItems($rows) {
+    $items  = [];
+    $levels = ['CARTON', 'BOX', 'PCS'];
+
+    foreach ($rows as $cells) {
+        $cells = array_map('trim', array_values($cells));
+
+        $level = strtoupper($cells[0] ?? '');
+        if (!in_array($level, $levels, true)) continue;   // header/junk skip
+
+        $parent    = $cells[1] ?? '';
+        $item_code = $cells[2] ?? '';
+        $item_name = $cells[3] ?? '';
+        $barcode   = $cells[4] ?? '';
+
+        if ($barcode === '' || $item_code === '') continue;
+        if (preg_match('/^(barcode|serial|level|item.*code)$/i', $barcode)) continue;
+        // GUARD: columns shifted hon to garbage product mut banao
+        if (preg_match('/\s/', $item_code)) continue;
+        if (levelFromBarcode($item_code) !== 'PCS' && preg_match('/^[LBP]/i', $item_code)) continue;
+
+        $pcs_qty     = (int)($cells[6] ?? 0);   // Total Pcs column
+        $boxes_per_ctn = (int)($cells[7] ?? 0); // Boxes pr Ctn
+        $pcs_per_box   = (int)($cells[8] ?? 0); // Pcs pr Box
+
+        if ($boxes_per_ctn < 1) $boxes_per_ctn = (int)($cells[5] ?? 0);
+
+        if ($pcs_qty < 1) {
+            $pcs_qty = $level === 'PCS' ? 1 : 0;
+        }
+
+        $items[] = [
+            'level'          => $level,
+            'parent_barcode' => $parent,
+            'item_code'      => $item_code,
+            'item_name'      => $item_name !== '' ? $item_name : $item_code,
+            'barcode'        => $barcode,
+            'pcs_qty'        => $pcs_qty,
+            'boxes_per_ctn'  => $boxes_per_ctn,
+            'pcs_per_box'    => $pcs_per_box,
+        ];
+    }
+    return $items;
+}
+
+/**
+ * LAST-RESORT fallback: simple 3-column sheet
+ *   Row = [Item Code, Items Name, Barcode]
+ *   Har row -> ek product + ek barcode (PCS).
+ */
+function sheetRowsToSimpleItems($rows) {
+    $items = [];
+    foreach ($rows as $cells) {
+        $cells = array_map('trim', array_values($cells));
+        if (count($cells) < 3) continue;
+
+        $code    = $cells[0];
+        $name    = $cells[1];
+        $barcode = $cells[2];
+
+        if (in_array(normalizeSheetHeader($code),    ['itemcode','itemid','code','srno','sr','serialno'], true)) continue;
+        if (in_array(normalizeSheetHeader($name),    ['itemsname','itemname','productname','name'], true))   continue;
+        if (in_array(normalizeSheetHeader($barcode), ['barcode','serialno','serial'], true))                 continue;
+
+        if ($code === '' || $barcode === '') continue;
+        if (preg_match('/\s/', $code)) continue;
+
+        $level = levelFromBarcode($barcode);
+        $items[] = [
+            'level'          => $level,
+            'parent_barcode' => '',
+            'item_code'      => $code,
+            'item_name'      => $name !== '' ? $name : $code,
+            'barcode'        => $barcode,
+            'pcs_qty'        => $level === 'PCS' ? 1 : 0,
+            'boxes_per_ctn'  => 0,
+            'pcs_per_box'    => 0,
+        ];
+    }
+    return $items;
+}
+
+/**
+ * Same item_code + same barcode wali rows ko 1 row mein merge karta hai.
+ * qty (CTN QTY) sum hoti hai. Different barcode = naya row.
+ */
+function aggregateSheetItems($items) {
+    $out = [];
+    foreach ($items as $it) {
+        $key = $it['item_code'] . "\0" . $it['barcode'];
+        if (!isset($out[$key])) {
+            $out[$key] = $it;
+            $out[$key]['count'] = 1;
+        } else {
+            $out[$key]['pcs_qty'] += (int)$it['pcs_qty'];
+            $out[$key]['count']++;
+        }
+    }
+    return array_values($out);
+}
+
+/**
+ * Har item ka check: item_code products mein aur barcode barcodes mein registered hai?
+ * Har item mein 'registered' => true/false add kar deta hai.
+ */
+function markRegisteredItems($items) {
+    global $conn;
+    $codes = [];
+    $bcs   = [];
+    foreach ($items as $it) {
+        if (($it['item_code'] ?? '') !== '') $codes[] = $it['item_code'];
+        if (($it['barcode']   ?? '') !== '') $bcs[]   = $it['barcode'];
+    }
+    $codes = array_values(array_unique($codes));
+    $bcs   = array_values(array_unique($bcs));
+
+    $prodSet = [];
+    if ($codes) {
+        $esc = array_map(function ($c) use ($conn) { return "'" . $conn->real_escape_string($c) . "'"; }, $codes);
+        if ($res = $conn->query("SELECT item_code FROM products WHERE item_code IN (" . implode(',', $esc) . ")")) {
+            while ($row = $res->fetch_assoc()) $prodSet[$row['item_code']] = true;
+        }
+    }
+    $bcSet = [];
+    if ($bcs) {
+        $esc = array_map(function ($b) use ($conn) { return "'" . $conn->real_escape_string($b) . "'"; }, $bcs);
+        if ($res = $conn->query("SELECT barcode FROM barcodes WHERE barcode IN (" . implode(',', $esc) . ")")) {
+            while ($row = $res->fetch_assoc()) $bcSet[$row['barcode']] = true;
+        }
+    }
+
+    $out = [];
+    foreach ($items as $it) {
+        $it['registered'] = isset($prodSet[$it['item_code'] ?? '']) && isset($bcSet[$it['barcode'] ?? '']);
+        $out[] = $it;
+    }
+    return $out;
 }

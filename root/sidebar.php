@@ -1,21 +1,18 @@
 <?php
-// root/_layout.php — shared sidebar
+// root/sidebar.php — shared sidebar
 // Expects: $page (string) = current page key
 $nav = [
     'dashboard' => ['index.php',   'Dashboard'],
     'products'  => ['products.php', 'Products'],
     'stock-in'  => ['stock-in.php', 'Stock In'],
     'stock-out' => ['stock-out.php','Stock Out'],
-    'scan'      => ['scan.php',     'Scan / Out'],
+   
     'history'   => ['history.php',  'History'],
 ];
 ?>
-
 <aside class="sidebar">
   <div class="brand">
-    <div class="brand-logo">
-      <img src="assets/images/logo.png" alt="Logo">
-    </div>
+    <div class="mark">S</div>
     <div class="name">Stock System</div>
     <div class="sub">In / Out Manager</div>
   </div>

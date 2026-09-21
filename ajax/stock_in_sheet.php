@@ -1,35 +1,53 @@
 <?php
-// ajax/stock_in_sheet.php — Sheet upload se Stock In
+/* ============================================================
+   ajax/stock_in_sheet.php — Sheet upload se Stock In (barcodes)
+   Sirf wahi barcodes process hote hain jo products/barcodes mein registered hain.
+   ============================================================ */
 require_once dirname(__DIR__) . '/config/db.php';
 
 $file = $_FILES['file'] ?? null;
-if (!$file || $file['error'] !== UPLOAD_ERR_OK) jout(['success' => false, 'message' => 'File upload nahi hui.']);
+if (!$file || $file['error'] !== UPLOAD_ERR_OK) jout(['success' => false, 'message' => 'File upload failed.']);
 
-$rows = sheetFileToRows($file);
-if (empty($rows)) jout(['success' => false, 'message' => 'File se koi data nahi mila.']);
-
+$rows  = sheetFileToRows($file);
+if (empty($rows)) jout(['success' => false, 'message' => 'No data found in file.']);
 $items = sheetRowsToItems($rows);
-if (empty($items)) jout(['success' => false, 'message' => 'Koi serial row nahi mili.']);
+$items = aggregateSheetItems($items);
+if (empty($items)) jout(['success' => false, 'message' => 'No CARTON/BOX/PCS rows found.']);
 
-$done = 0;
-$totalQty = 0;
-foreach ($items as $it) {
-    $serial = $it['serial'];
-    $qty = $it['qty'];
-    if ($serial === '' || $qty <= 0) continue;
+$selected = json_decode($_POST['selected'] ?? 'null', true);
+if (is_array($selected) && count($selected)) {
+    $allowed = array_flip($selected);
+    $items = array_values(array_filter($items, function ($it) use ($allowed) {
+        return isset($allowed[$it['barcode']]);
+    }));
+}
+if (empty($items)) jout(['success' => false, 'message' => 'No rows selected.']);
 
-    $product = ensureProduct($serial, $it);
-    if (!$product) continue;
+/* ---- Sirf registered products/barcodes ---- */
+$items   = markRegisteredItems($items);
+$skipped = 0;
+$items   = array_values(array_filter($items, function ($it) use (&$skipped) {
+    if (empty($it['registered'])) { $skipped++; return false; }
+    return true;
+}));
 
-    $conn->execute_query("UPDATE products SET current_stock = current_stock + ? WHERE serial_code = ?", [$qty, $serial]);
-
-    $st = $conn->prepare("INSERT INTO stock_in (serial_code, item_name, quantity, remark, source) VALUES (?,?,?,?,?)");
-    $remark = 'sheet';
-    $st->bind_param('ssiss', $serial, $it['item_name'], $qty, $remark, 'sheet');
-    $st->execute();
-
-    $done++;
-    $totalQty += $qty;
+if (empty($items)) {
+    jout(['success' => false, 'message' => 'Koi bhi barcode registered product se match nahi karta. Pehle Products page se product add karo, phir Stock In sheet dalo.']);
 }
 
-jout(['success' => true, 'message' => "Stock In done: {$done} items, total +{$totalQty} qty"]);
+$done = 0; $fail = 0; $totalPcs = 0;
+foreach ($items as $it) {
+    $res = processStockIn($it['barcode'], 'sheet', 'sheet', (int)$it['pcs_qty']);
+    if ($res['success']) { $done++; $totalPcs += $res['pcs']; } else { $fail++; }
+}
+
+jout([
+    'success'   => true,
+    'message'   => "Stock In done: {$done} barcodes, +{$totalPcs} pcs total" .
+                   ($skipped ? ", {$skipped} skipped (product add nahi hai)" : '') .
+                   ($fail ? " ({$fail} failed)" : ''),
+    'done'      => $done,
+    'failed'    => $fail,
+    'skipped'   => $skipped,
+    'total_pcs' => $totalPcs,
+]);

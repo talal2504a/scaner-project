@@ -13,3 +13,10 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Temporary debug / cleanup scripts
+chk_*.php
+clean.php
+fix_fn.php
+*.bak
+STRUCTURE.md
