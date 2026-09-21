@@ -195,12 +195,16 @@
       xhr.upload.onload = function(){
         showProgress('Processing on server...', null);
       };
-      xhr.onload = function(){
+           xhr.onload = function(){
         if (xhr.status === 200){
-          try { var d = JSON.parse(xhr.responseText); hideProgress(); onDone(d); }
-          catch(ex){ hideProgress(); onDone({success:false, message:'Invalid response from server'}); }
+          var d = null;
+          try { d = JSON.parse(xhr.responseText); }
+          catch(ex){ hideProgress(); onDone({success:false, message:'Invalid response from server'}); return; }
+          hideProgress();
+          onDone(d);
         } else { hideProgress(); onDone({success:false, message:'Upload failed (HTTP ' + xhr.status + ')'}); }
       };
+
       xhr.onerror = function(){ hideProgress(); onDone({success:false, message:'Network error'}); };
       xhr.send(fd);
     }
