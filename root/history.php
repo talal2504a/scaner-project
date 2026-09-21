@@ -129,7 +129,8 @@ function uploadWithProgress(url, fd, onDone){
   var xhr = new XMLHttpRequest(); xhr.open('POST', url, true);
   xhr.upload.onprogress = function(e){ if(e.lengthComputable){ showProgress('Uploading file...', Math.round((e.loaded/e.total)*100)); } };
   xhr.onload = function(){
-    if (xhr.status===200){ showProgress('Processing...', null); try{var d=JSON.parse(xhr.responseText);hideProgress();onDone(d);}catch(ex){hideProgress();onDone({success:false,message:'Invalid response'});} }
+     if (xhr.status===200){ showProgress('Processing...', null); var d=null; try{d=JSON.parse(xhr.responseText);}catch(ex){hideProgress();onDone({success:false,message:'Invalid response'});return;} hideProgress(); onDone(d); }
+
     else { hideProgress(); onDone({success:false,message:'Upload failed'}); }
   };
   xhr.onerror = function(){ hideProgress(); onDone({success:false,message:'Network error'}); };
