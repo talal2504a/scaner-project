@@ -39,10 +39,9 @@ $conn->set_charset('utf8mb4');
  */
 function jout($arr) {
     header('Content-Type: application/json');
-    echo json_encode($arr);
+    echo json_encode($arr, JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
-
 
 /* ============================================================
    PRODUCT HELPERS (item_code se)
