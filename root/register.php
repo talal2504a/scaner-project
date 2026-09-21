@@ -130,14 +130,16 @@ function uploadWithProgress(url, fd, onDone){
     if (xhr.status === 200){
       // Upload done — ab server processing (honest spinner, no fake %)
       showProgress('Processing...', null);
+      var d = null;
       try {
-        var d = JSON.parse(xhr.responseText);
-        hideProgress();
-        onDone(d);
+        d = JSON.parse(xhr.responseText);
       } catch(ex){
         hideProgress();
         onDone({success:false, message:'Invalid response'});
+        return;
       }
+      hideProgress();
+      onDone(d);
     } else {
       hideProgress();
       onDone({success:false, message:'Upload failed ('+xhr.status+')'});
