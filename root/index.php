@@ -184,7 +184,7 @@ function deleteBc(barcode){
 $('ctnList').addEventListener('click', function(e){
   var di = e.target.closest('.del-item');
   if(di){ deleteItem(di.dataset.code); return; }
-  var db = e.target.closest('.del-bc');
+  var db = e.target.closest('.del-bc-btn');
   if(db){ deleteBc(db.dataset.barcode); }
 });
 
