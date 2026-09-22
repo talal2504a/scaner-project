@@ -26,6 +26,14 @@ $page = 'products';
   border-radius:8px;padding:8px 12px;min-width:180px;flex:1;
 }
 .file-upload .fname b{color:var(--amber)}
+/* ---- Progress wrap (sirf .show pe dikhe) ---- */
+.progress-wrap{display:none;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.progress-wrap.show{display:block}
+.progress-bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.progress-text{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-family:'Inter',sans-serif}
+.progress-spinner{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
+.pct{color:var(--amber);font-weight:600;margin-left:auto}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 <body>
 <div class="app">
@@ -205,7 +213,13 @@ $('btnReg').addEventListener('click', function(){
     }
   });
 });
-
+// File selected → name dikhao
+$('r_sheet').addEventListener('change', function(){
+  var f = this.files[0];
+  $('sheetFileName').innerHTML = f
+    ? '<b>'+f.name+'</b> · '+(f.size/1024).toFixed(0)+' KB'
+    : 'No file selected';
+});
 // Sheet preview — XHR with REAL upload progress
 $('btnPreview').addEventListener('click', function(){
   var file = $('r_sheet').files[0];
