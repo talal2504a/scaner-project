@@ -25,6 +25,30 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <title>Dashboard — Diwan International Pvt Ltd</title>
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 <style>
+  .bc-code-chip{
+  font-size:12px;color:var(--muted);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:7px;padding:5px 10px;
+  margin:8px 0 8px 0;display:inline-block;
+}
+.bc-code-chip b{color:var(--amber)}
+.bc-left{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.bc-svg{
+  background:#fff;border:1px solid var(--line);border-radius:6px;
+  padding:4px 6px;height:34px;
+}
+.bc-num{font-size:13px;letter-spacing:.06em;color:var(--text)}
+.del-bc-btn{
+  background:var(--rust-bg);color:var(--rust);border:1.5px solid #5A2026;
+  border-radius:7px;padding:5px 12px;font-size:11.5px;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;margin-left:auto;
+}
+.del-bc-btn:hover{background:#42161A;color:#FF4D5E;border-color:#FF4D5E}
+.del-item{
+  background:var(--rust-bg);color:var(--rust);border:1.5px solid #5A2026;
+  border-radius:7px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.del-item:hover{background:#42161A;color:#FF4D5E;border-color:#FF4D5E}
 /* ---- Items / Cartons panel (dashboard) ---- */
 .ctn-head{
   display:flex;justify-content:space-between;align-items:center;padding:10px 0;
@@ -101,6 +125,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 </div>
 
 <script src="assets/js/app.js?v=<?php echo filemtime('assets/js/app.js'); ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 var DASH_ITEMS = <?php echo $dashItemsJson; ?>;
 
