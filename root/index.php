@@ -141,7 +141,7 @@ function renderItems(list){
       '<div class="ctn-head" data-code="'+esc(it.item_code)+'" onclick="toggleCtnEvent(event,this)">'+
         '<div><div class="name">'+esc(it.item_name)+'</div>'+
         '<div class="meta">'+esc(it.item_code)+' · Stock: '+esc(it.current_stock_pcs)+' pcs</div></div>'+
-        '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button class="btn btn-danger btn-sm del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#9656;</span></div>'+
+        '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button class="btn btn-danger btn-sm del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#10095;</span></div>'+
       '</div>'+
       '<div class="ctn-body">'+(lines || '<span class="dash">No barcodes.</span>')+'</div>'+
     '</div>';
