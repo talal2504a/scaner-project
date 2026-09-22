@@ -386,3 +386,48 @@ table .mono{font-size:12.5px;}
     .summary-item{border-right:none;border-bottom:1px solid var(--line);}
     .summary-item:last-child{border-bottom:none;}
 }
+/* ============================================================
+   CLEAN BUTTONS — crisp, no weird gradients
+   ============================================================ */
+.btn{
+    background:#222228;
+    color:#fff;
+    border:1px solid #3A3A42;
+    border-radius:8px;
+    padding:10px 18px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:background .15s,border-color .15s;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+}
+.btn:hover{background:#2C2C34;border-color:#4A4A54;}
+
+.btn.amber{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600;}
+.btn.amber:hover{background:var(--amber-dark);border-color:var(--amber-dark);}
+
+.btn.green{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn.green:hover{background:var(--blue-dark);border-color:var(--blue-dark);}
+
+.btn.red{background:var(--rust);border-color:var(--rust);color:#fff;}
+.btn.red:hover{background:var(--red-dark);border-color:var(--red-dark);}
+
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn.blue:hover{background:var(--blue-dark);border-color:var(--blue-dark);}
+
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+.btn.ghost:hover{background:rgba(255,255,255,.06);border-color:var(--amber);}
+
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn:active{transform:translateY(1px);}
+
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px;}
+.btn-ok{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.btn-ok:hover{background:var(--blue-dark);border-color:var(--blue-dark);}
+.btn-danger{background:var(--rust-bg);color:var(--rust);border:1.5px solid #5A2026;}
+.btn-danger:hover{background:#42161A;color:#FF4D5E;}
