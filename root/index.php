@@ -158,7 +158,10 @@ function renderItems(list){
   if(!box) return;
   if(!list || !list.length){ box.innerHTML='<span class="dash">Abhi koi item register nahi hua.</span>'; return; }
   box.innerHTML = list.map(function(it){
-    var bcs = String(it.barcodes||'').split('|').filter(function(x){ return x !== ''; });
+      var bcs = String(it.barcodes||'').split('|').filter(function(x){ return x !== ''; }).map(function(x){
+      var i = x.indexOf(':');
+      return i > 0 ? x.substring(i+1) : x;
+    });
     var lines = bcs.map(function(b,i){
       return '<div class="ctn-line" data-barcode="'+esc(b)+'">'+
         '<div class="bc-left">'+
