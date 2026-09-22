@@ -14,7 +14,7 @@ $page = 'stock-out';
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 </head>
 <body>
-  <!-- Undo Confirm Modal -->
+<!-- Undo Confirm Modal -->
 <div class="del-modal-overlay" id="undoModal">
   <div class="del-modal-box">
     <button type="button" class="del-modal-close" onclick="closeUndoModal()">&times;</button>
@@ -28,6 +28,7 @@ $page = 'stock-out';
     </div>
   </div>
 </div>
+
 <div class="app">
   <?php include 'sidebar.php'; ?>
 
@@ -94,8 +95,7 @@ $page = 'stock-out';
 
         <button type="button" class="btn red" id="btnSubmitOut">- Stock Out</button>
 
-        <!-- ===== UNDO BOX (panel ke ANDAR, button ke baad) ===== -->
-               <!-- ===== UNDO BOX (sirf Undo Last) ===== -->
+        <!-- ===== UNDO BOX (sirf Undo Last) ===== -->
         <div class="panel" style="margin-top:18px;padding:16px 18px;border-color:#5A2026;background:var(--panel)">
           <h3 style="margin:0 0 8px 0;font-size:14.5px">↩️ Undo Last Stock Out <span style="font-weight:400;color:var(--muted);font-size:12.5px">(galti se out hua stock wapas lo)</span></h3>
           <p class="desc" style="margin:0 0 12px 0">Aakhri stock out wapas add ho jayega aur record delete.</p>
@@ -223,7 +223,6 @@ $('btnSubmitOut').addEventListener('click', function(){
   });
 });
 
-/* ---------- UNDO STOCK OUT ---------- */
 /* ================= UNDO LAST (MODAL) ================= */
 var undoPending = false;
 
@@ -265,21 +264,6 @@ function doUndoLast(){
     })
     .catch(function(){ $('undoResult').innerHTML = '<span class="tag low">⚠️ Server error.</span>'; });
 }
-/* ---------- UNDO LAST (bina barcode — aakhri stock out) ---------- */
-$('btnUndoLast').addEventListener('click', function(){
-  var msg = 'Undo the LAST stock out? Stock wapas add ho jayega.';
-  if (!confirm(msg)) return;
-  var fd = new FormData();   /* koi barcode nahi — server last uthayega */
-  fetch('../ajax/undo_stock_out.php', { method: 'POST', body: fd })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      $('undoResult').innerHTML = d.success
-        ? '<span class="tag ok">✅ ' + d.message + '</span>'
-        : '<span class="tag low">⚠️ ' + (d.message || 'Error') + '</span>';
-      if (d.success) { $('undo_serial').value = ''; }
-    })
-    .catch(function(){ $('undoResult').innerHTML = '<span class="tag low">⚠️ Server error.</span>'; });
-});
 
 /* ================= SCANNER MODAL ================= */
 var scanUnlocked   = false;   // safety lock
