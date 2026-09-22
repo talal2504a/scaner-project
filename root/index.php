@@ -118,6 +118,19 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <body>
 <div class="app">
   <?php include 'sidebar.php'; ?>
+<!-- Delete Confirmation Modal -->
+<div class="del-modal-overlay" id="delModal">
+  <div class="del-modal-box">
+    <div class="del-icon">🗑️</div>
+    <h3 id="delModalTitle">Delete</h3>
+    <span class="del-code" id="delModalCode" style="display:none"></span>
+    <p id="delModalMsg">Are you sure?</p>
+    <div class="del-modal-actions">
+      <button type="button" class="btn ghost" onclick="closeDelModal()">Cancel</button>
+      <button type="button" class="btn red" id="delModalConfirm">Delete</button>
+    </div>
+  </div>
+</div>
 
   <main>
     <div class="pagehead">
