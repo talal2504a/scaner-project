@@ -76,9 +76,13 @@ $page = 'products';
         Hierarchy sheet — columns auto-detected from headers (Item ID | Items Name | Barcode minimum).<br>
         Level (L/B/P), Parent, Boxes pr Ctn, Pcs pr Box, Total Pcs — headers se mil jaayenge.
       </p>
-      <div class="field" style="margin-bottom:12px">
+           <div class="field" style="margin-bottom:12px">
         <label>Sheet File (xlsx, xls, csv, txt) *</label>
-        <input type="file" id="r_sheet" accept=".xlsx,.xls,.csv,.txt">
+        <div class="file-upload">
+          <label class="up-btn" for="r_sheet">📂 &nbsp;Choose File</label>
+          <input type="file" id="r_sheet" accept=".xlsx,.xls,.csv,.txt">
+          <span class="fname" id="sheetFileName">No file selected</span>
+        </div>
       </div>
       <div class="field" style="margin-bottom:12px">
         <button class="btn btn-ok" id="btnPreview">Preview</button>
