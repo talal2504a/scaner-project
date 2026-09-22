@@ -129,31 +129,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <script>
 var DASH_ITEMS = <?php echo $dashItemsJson; ?>;
 
-function renderRecent(list){
-  if(!list || !list.length){ $('recentList').innerHTML='<span class="dash">No activity yet.</span>'; return; }
-  $('recentList').innerHTML = list.map(function(r){
-    var klass = r.rec_type==='in' ? 'in-txt' : 'out-txt';
-    var lab = r.rec_type==='in' ? 'IN +' : 'OUT -';
-    return '<div class="item-row">'+
-      '<div><div class="name">'+esc(r.item_name)+'</div>'+
-      '<div class="meta">'+esc(r.barcode)+' · '+esc(r.level)+' ('+esc(r.pcs_qty)+' pcs) · '+esc(r.entry_date)+'</div></div>'+
-      '<div class="right"><div class="qty '+klass+'">'+lab+r.pcs_qty+'</div></div></div>';
-  }).join('');
-}
 
-/* ---- Items / Cartons: collapsed = total CTN, click = expand barcodes ---- */
-/* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
-function toggleCtn(head){
-  var body = head.nextElementSibling;
-  if(!body) return;
-  var open = body.classList.contains('open');
-  body.classList.toggle('open', !open);
-  head.classList.toggle('open', !open);
-}
-function toggleCtnEvent(e, el){
-  if(e.target.closest('.del-item')) return;
-  toggleCtn(el);
-}
 function renderItems(list){
   var box = $('ctnList');
   if(!box) return;
@@ -161,19 +137,38 @@ function renderItems(list){
   box.innerHTML = list.map(function(it){
     var bcs = String(it.barcodes||'').split('|').filter(function(x){ return x !== ''; });
     var lines = bcs.map(function(b,i){
-      return '<div class="ctn-line" data-barcode="'+esc(b)+'"><span class="idx">'+(i+1)+'.</span><span class="mono">'+esc(b)+'</span> <span class="tag out del-bc" style="cursor:pointer" data-barcode="'+esc(b)+'">Del</span></div>';
+      return '<div class="ctn-line" data-barcode="'+esc(b)+'">'+
+        '<div class="bc-left">'+
+          '<svg class="bc-svg" data-bc="'+esc(b)+'"></svg>'+
+          '<span class="bc-num mono">'+esc(b)+'</span>'+
+        '</div>'+
+        '<button class="del-bc-btn" data-barcode="'+esc(b)+'" title="Delete barcode">Del</button>'+
+      '</div>';
     }).join('');
     return '<div class="ctn-item">'+
       '<div class="ctn-head" data-code="'+esc(it.item_code)+'" onclick="toggleCtnEvent(event,this)">'+
         '<div><div class="name">'+esc(it.item_name)+'</div>'+
         '<div class="meta">'+esc(it.item_code)+' · Stock: '+esc(it.current_stock_pcs)+' pcs</div></div>'+
-        '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button class="btn btn-danger btn-sm del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#10095;</span></div>'+
+        '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button class="del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#10095;</span></div>'+
       '</div>'+
-      '<div class="ctn-body">'+(lines || '<span class="dash">No barcodes.</span>')+'</div>'+
+      '<div class="ctn-body">'+
+        '<div class="bc-code-chip">Item Code: <b>'+esc(it.item_code)+'</b></div>'+
+        (lines || '<span class="dash">No barcodes.</span>')+
+      '</div>'+
     '</div>';
   }).join('');
+  var svgs = box.querySelectorAll('.bc-svg');
+  for(var i=0;i<svgs.length;i++){
+    (function(svg){
+      try{
+        JsBarcode(svg, svg.getAttribute('data-bc'), {
+          format:'CODE128', height:28, width:1.4,
+          displayValue:false, background:'#ffffff', lineColor:'#000000'
+        });
+      }catch(e){ svg.style.display='none'; }
+svgs[i]);
+  }
 }
-
 function deleteItem(code){
   if(!confirm('Delete this product and ALL its stock?')) return;
   fetch('../ajax/delete_product.php?item_code='+encodeURIComponent(code))
