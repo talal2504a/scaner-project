@@ -7,6 +7,37 @@
   <title>Products - Diwan International Pvt Ltd</title>
   <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 </head>
+
+<style>
+/* ---- Delete Confirmation Modal (same style as dashboard) ---- */
+.del-modal-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.72);z-index:2000;
+  align-items:center;justify-content:center;padding:20px;
+}
+.del-modal-overlay.open{display:flex}
+.del-modal-box{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:26px;width:100%;max-width:370px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  animation:slideDown .25s ease;
+}
+.del-icon{
+  width:52px;height:52px;border-radius:50%;margin:0 auto 14px auto;
+  background:var(--rust-bg);color:var(--rust);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;border:1.5px solid #5A2026;
+}
+.del-modal-box h3{margin:0 0 8px 0;font-size:16px;color:var(--text)}
+.del-modal-box p{font-size:13px;color:var(--muted);margin:0 0 20px 0;line-height:1.6}
+.del-modal-box .del-code{
+  display:inline-block;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:6px;padding:3px 10px;font-size:12px;color:var(--amber);
+  font-family:'Sora',sans-serif;margin-bottom:12px;
+}
+.del-modal-actions{display:flex;gap:10px}
+ .btn{flex:1}
+</style>
 <body>
   <div class="app">
     <?php include 'sidebar.php'; ?>
