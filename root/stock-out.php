@@ -224,22 +224,47 @@ $('btnSubmitOut').addEventListener('click', function(){
 });
 
 /* ---------- UNDO STOCK OUT ---------- */
-$('btnUndoOut').addEventListener('click', function(){
-  var bc = $('undo_serial').value.trim();
-  if (!bc) { $('undoResult').innerHTML = '<span class="tag low">Barcode daalo pehle.</span>'; return; }
-  if (!confirm('Undo this stock out? Stock wapas add ho jayega: ' + bc)) return;
-  var fd = new FormData();
-  fd.append('barcode', bc);
+/* ================= UNDO LAST (MODAL) ================= */
+var undoPending = false;
+
+function openUndoModal(){
+  undoPending = true;
+  $('undoModalTitle').textContent = 'Undo Last Stock Out';
+  $('undoModalCode').style.display = 'none';
+  $('undoModalMsg').textContent = 'Aakhri stock out wapas add ho jayega aur record delete. Sure?';
+  $('undoModal').classList.add('open');
+}
+function closeUndoModal(){
+  $('undoModal').classList.remove('open');
+  undoPending = false;
+}
+$('undoModalConfirm').addEventListener('click', function(){
+  if(!undoPending) return;
+  undoPending = false;
+  closeUndoModal();
+  doUndoLast();
+});
+$('undoModal').addEventListener('click', function(e){
+  if(e.target === this) closeUndoModal();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && undoPending) closeUndoModal();
+});
+
+$('btnUndoLast').addEventListener('click', function(){
+  openUndoModal();
+});
+function doUndoLast(){
+  var fd = new FormData();   /* koi barcode nahi — server last uthayega */
   fetch('../ajax/undo_stock_out.php', { method: 'POST', body: fd })
     .then(function(r){ return r.json(); })
     .then(function(d){
       $('undoResult').innerHTML = d.success
         ? '<span class="tag ok">✅ ' + d.message + '</span>'
         : '<span class="tag low">⚠️ ' + (d.message || 'Error') + '</span>';
-      if (d.success) { $('undo_serial').value = ''; }
     })
     .catch(function(){ $('undoResult').innerHTML = '<span class="tag low">⚠️ Server error.</span>'; });
-});
+}
 /* ---------- UNDO LAST (bina barcode — aakhri stock out) ---------- */
 $('btnUndoLast').addEventListener('click', function(){
   var msg = 'Undo the LAST stock out? Stock wapas add ho jayega.';
