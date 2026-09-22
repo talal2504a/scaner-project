@@ -9,17 +9,7 @@
 </head>
 
 <style>
-  /* Round close button */
-.modal-close, .del-modal-close{
-  position:absolute;top:12px;right:12px;
-  width:30px;height:30px;border-radius:50%;
-  background:var(--panel-2);border:1px solid var(--line);
-  color:var(--muted);font-size:18px;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .15s;
-}
-.modal-close:hover, .del-modal-close:hover{background:var(--rust-bg);color:var(--rust);border-color:#5A2026}
-.del-modal-box{position:relative}
+  
 /* ---- Delete Confirmation Modal (same style as dashboard) ---- */
 .del-modal-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
@@ -58,7 +48,7 @@
           <h1>Products</h1>
           <p class="desc">All items appear here. Item code, barcodes, current stock and delete.</p>
         </div>
-        <button type="button" class="del-modal-close" onclick="closeDelModal()">&times;</button>
+        <button type="button" class="btn" onclick="openReg()">+ Register Product</button>
       </div>
 
       <div class="field" style="max-width:420px">
