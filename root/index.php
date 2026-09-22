@@ -199,7 +199,11 @@ function deleteItem(code){
   if(!confirm('Delete this product and ALL its stock?')) return;
   fetch('../ajax/delete_product.php?item_code='+encodeURIComponent(code))
     .then(function(r){ return r.json(); })
-    .then(function(d){ if(d.success){ var el=document.querySelector('.ctn-head[data-code="'+code+'"]'); if(el) el.closest('.ctn-item').remove(); } });
+    .then(function(d){
+      if(!d.success){ alert(d.message || 'Delete failed.'); return; }
+      refreshDashboard();   // AJAX se fresh — no page reload
+    })
+    .catch(function(){ alert('Delete error.'); });
 }
 function deleteBc(barcode){
   if(!confirm('Delete this barcode and reverse its stock?')) return;
