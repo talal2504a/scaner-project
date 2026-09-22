@@ -61,6 +61,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 .ctn-body.open .ctn-line:nth-child(5){transition-delay:.25s}
 .ctn-line:hover{background:rgba(229,20,46,.08)}
 .ctn-line .idx{color:var(--muted);display:inline-block;width:28px}
+</style>
 </head>
 <body>
 <div class="app">
