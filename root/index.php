@@ -193,7 +193,57 @@ function toggleCtnEvent(e, el){
   if(e.target.closest('.del-item') || e.target.closest('.del-bc-btn')) return;
   toggleCtn(el);
 }
+/* ---- Delete Confirmation Modal ---- */
+var delPending = null;
 
+function openDelModal(title, code, msg, type, value){
+  $('delModalTitle').textContent = title;
+  $('delModalMsg').textContent = msg;
+  $('delModalCode').style.display = code ? 'inline-block' : 'none';
+  $('delModalCode').textContent = code || '';
+  delPending = { type: type, value: value };
+  $('delModal').classList.add('open');
+}
+function closeDelModal(){
+  $('delModal').classList.remove('open');
+  delPending = null;
+}
+$('delModalConfirm').addEventListener('click', function(){
+  if(!delPending) return;
+  var p = delPending;
+  closeDelModal();
+  if(p.type === 'bc') doDeleteBc(p.value);
+  else doDeleteItem(p.value);
+});
+
+function deleteItem(code){
+  var name = '';
+  var el = document.querySelector('.ctn-head[data-code="'+code+'"]');
+  if(el && el.querySelector('.name')) name = el.querySelector('.name').textContent;
+  openDelModal('Delete Product', code, 'Delete "'+name+'" and ALL its stock? Ye wapas nahi aayega.', 'item', code);
+}
+function deleteBc(barcode){
+  openDelModal('Delete Barcode', barcode, 'Delete this barcode and reverse its stock? Ye wapas nahi aayega.', 'bc', barcode);
+}
+
+function doDeleteItem(code){
+  fetch('../ajax/delete_product.php?item_code='+encodeURIComponent(code))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.success){ alert(d.message || 'Delete failed.'); return; }
+      refreshDashboard();
+    })
+    .catch(function(){ alert('Delete error.'); });
+}
+function doDeleteBc(barcode){
+  fetch('../ajax/delete_barcode.php?barcode='+encodeURIComponent(barcode))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.success){ alert(d.message || 'Delete failed.'); return; }
+      refreshDashboard();
+    })
+    .catch(function(){ alert('Delete error.'); });
+}
 function renderItems(list){
   var box = $('ctnList');
   if(!box) return;
