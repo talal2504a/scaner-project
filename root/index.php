@@ -63,8 +63,8 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
     <div class="grid-2">
       <!-- Items / Cartons (LEFT) -->
       <div class="panel">
-        <h3>Items — Cartons <span>(click kisi bhi row pe — har carton ka real barcode)</span> <button class="btn btn-sm btn-success" onclick="location.reload()">Refresh</button></h3>
-        <div id="ctnList"><span class="dash">Loading...</span></div>
+      <h3>Items — Cartons <span>(click kisi bhi row pe — har carton ka real barcode)</span></h3>    
+      <div id="ctnList"><span class="dash">Loading...</span></div>
       </div>
 
       <!-- Recent Activity (RIGHT) -->
