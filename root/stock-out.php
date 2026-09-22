@@ -81,6 +81,18 @@ $page = 'stock-out';
         <button class="btn red" id="btnSubmitOut">- Stock Out</button>
       </div>
     </div>
+            <button class="btn red" id="btnSubmitOut">- Stock Out</button>
+
+        <!-- UNDO BOX -->
+        <div class="panel" style="margin-top:16px;padding:16px 18px;border-color:#5A2026">
+          <h3 style="margin:0 0 8px 0">↩️ Undo Stock Out <span>(galti se out hua barcode wapas lo)</span></h3>
+          <p class="desc" style="margin:0 0 12px 0">Barcode daalo jo galti se out hua tha — stock wapas add ho jayega aur record delete.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input type="text" id="undo_serial" placeholder="e.g. 0064602079363293384" style="flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#121212;color:var(--text)">
+            <button type="button" class="btn amber" id="btnUndoOut">↩️ Undo</button>
+          </div>
+          <div id="undoResult" style="margin-top:10px"></div>
+        </div>
 
     <!-- ============ TAB 2: Sheet Upload ============ -->
     <div class="tab-pane" id="pane2">
@@ -200,6 +212,23 @@ $('btnSubmitOut').addEventListener('click', function(){
   });
 });
 
+/* ---------- UNDO STOCK OUT ---------- */
+$('btnUndoOut').addEventListener('click', function(){
+  var bc = $('undo_serial').value.trim();
+  if (!bc) { $('undoResult').innerHTML = '<span class="tag low">Barcode daalo pehle.</span>'; return; }
+  if (!confirm('Undo this stock out? Stock wapas add ho jayega: ' + bc)) return;
+  var fd = new FormData();
+  fd.append('barcode', bc);
+  fetch('../ajax/undo_stock_out.php', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      $('undoResult').innerHTML = d.success
+        ? '<span class="tag ok">✅ ' + d.message + '</span>'
+        : '<span class="tag low">⚠️ ' + (d.message || 'Error') + '</span>';
+      if (d.success) { $('undo_serial').value = ''; }
+    })
+    .catch(function(){ $('undoResult').innerHTML = '<span class="tag low">⚠️ Server error.</span>'; });
+});
 
 /* ================= SCANNER MODAL ================= */
 var scanUnlocked   = false;   // safety lock
