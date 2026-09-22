@@ -228,6 +228,21 @@ $('btnUndoOut').addEventListener('click', function(){
     })
     .catch(function(){ $('undoResult').innerHTML = '<span class="tag low">⚠️ Server error.</span>'; });
 });
+/* ---------- UNDO LAST (bina barcode — aakhri stock out) ---------- */
+$('btnUndoLast').addEventListener('click', function(){
+  var msg = 'Undo the LAST stock out? Stock wapas add ho jayega.';
+  if (!confirm(msg)) return;
+  var fd = new FormData();   /* koi barcode nahi — server last uthayega */
+  fetch('../ajax/undo_stock_out.php', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      $('undoResult').innerHTML = d.success
+        ? '<span class="tag ok">✅ ' + d.message + '</span>'
+        : '<span class="tag low">⚠️ ' + (d.message || 'Error') + '</span>';
+      if (d.success) { $('undo_serial').value = ''; }
+    })
+    .catch(function(){ $('undoResult').innerHTML = '<span class="tag low">⚠️ Server error.</span>'; });
+});
 
 /* ================= SCANNER MODAL ================= */
 var scanUnlocked   = false;   // safety lock
