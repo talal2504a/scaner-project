@@ -128,7 +128,30 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 var DASH_ITEMS = <?php echo $dashItemsJson; ?>;
+function renderRecent(list){
+  if(!list || !list.length){ $('recentList').innerHTML='<span class="dash">No activity yet.</span>'; return; }
+  $('recentList').innerHTML = list.map(function(r){
+    var klass = r.rec_type==='in' ? 'in-txt' : 'out-txt';
+    var lab = r.rec_type==='in' ? 'IN +' : 'OUT -';
+    return '<div class="item-row">'+
+      '<div><div class="name">'+esc(r.item_name)+'</div>'+
+      '<div class="meta">'+esc(r.barcode)+' · '+esc(r.level)+' ('+esc(r.pcs_qty)+' pcs) · '+esc(r.entry_date)+'</div></div>'+
+      '<div class="right"><div class="qty '+klass+'">'+lab+r.pcs_qty+'</div></div></div>';
+  }).join('');
+}
 
+/* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
+function toggleCtn(head){
+  var body = head.nextElementSibling;
+  if(!body) return;
+  var open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  head.classList.toggle('open', !open);
+}
+function toggleCtnEvent(e, el){
+  if(e.target.closest('.del-item') || e.target.closest('.del-bc-btn')) return;
+  toggleCtn(el);
+}
 
 function renderItems(list){
   var box = $('ctnList');
