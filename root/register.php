@@ -25,9 +25,8 @@ $page = 'products';
   border-radius:8px;padding:8px 12px;min-width:180px;flex:1;
 }
 .file-upload .fname b{color:var(--amber)}
-/* ---- Progress wrap (sirf .show pe dikhe) ---- */
-.progress-wrap{display:none !important;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
-.progress-wrap.show{display:block !important}
+/* ---- Progress wrap (sirf show hone pe dikhe) ---- */
+.progress-wrap{display:none;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
 .progress-bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:6px}
 .progress-text{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-family:'Inter',sans-serif}
 .progress-spinner{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
@@ -96,8 +95,8 @@ $page = 'products';
         <button class="btn green" id="btnPreview">Preview</button>
         <button class="btn red" id="btnSheetUpload" disabled>Upload &amp; Register Sheet</button>
       </div>
-      <!-- Progress bar -->
-      <div class="progress-wrap" id="progressWrap">
+      <!-- Progress bar (inline hidden — pakka) -->
+      <div class="progress-wrap" id="progressWrap" style="display:none">
         <div class="progress-bar" id="progressBar"></div>
         <div class="progress-text">
           <div class="progress-spinner"></div>
@@ -123,9 +122,9 @@ $page = 'products';
 
 <script src="assets/js/app.js?v=<?php echo filemtime('assets/js/app.js'); ?>"></script>
 <script>
-// ---------- Progress helper ----------
+// ---------- Progress helper (inline display — CSS override nahi kar sakta) ----------
 function showProgress(label, pct){
-  $('progressWrap').classList.add('show');
+  $('progressWrap').style.display = 'block';
   $('progressLabel').textContent = label;
   if (pct !== null){
     $('progressPct').textContent = pct + '%';
@@ -137,7 +136,7 @@ function showProgress(label, pct){
   }
 }
 function hideProgress(){
-  $('progressWrap').classList.remove('show');
+  $('progressWrap').style.display = 'none';
   $('progressBar').style.width = '0%';
   $('progressBar').style.opacity = '1';
 }
