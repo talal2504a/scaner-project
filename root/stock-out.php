@@ -50,25 +50,25 @@ $page = 'stock-out';
           <!-- Level (auto, readonly) -->
           <div class="field">
             <label>Level (auto)</label>
-            <input type="text" id="m_level" readonly style="background:#EFEFEF" placeholder="CARTON / BOX / PCS">
+            <input type="text" id="m_level" readonly placeholder="CARTON / BOX / PCS">
           </div>
 
           <!-- Pcs Qty (auto) -->
           <div class="field">
             <label>Pcs Qty (auto)</label>
-            <input type="text" id="m_pcsqty" readonly style="background:#EFEFEF" placeholder="180 / 30 / 1">
+            <input type="text" id="m_pcsqty" readonly placeholder="180 / 30 / 1">
           </div>
 
           <!-- Item name (auto-fill, readonly) -->
           <div class="field">
             <label>Item Name (auto-fill)</label>
-            <input type="text" id="m_name" readonly style="background:#EFEFEF">
+            <input type="text" id="m_name" readonly>
           </div>
 
           <!-- Available stock (readonly) -->
           <div class="field">
             <label>Available Stock (Pcs)</label>
-            <input type="text" id="m_stock" readonly style="background:#EFEFEF">
+            <input type="text" id="m_stock" readonly>
           </div>
 
           <!-- Remark -->
@@ -78,14 +78,11 @@ $page = 'stock-out';
           </div>
         </div>
 
-        <button class="btn red" id="btnSubmitOut">- Stock Out</button>
-      </div>
-    </div>
-            <button class="btn red" id="btnSubmitOut">- Stock Out</button>
+        <button type="button" class="btn red" id="btnSubmitOut">- Stock Out</button>
 
-        <!-- UNDO BOX -->
-        <div class="panel" style="margin-top:16px;padding:16px 18px;border-color:#5A2026">
-          <h3 style="margin:0 0 8px 0">↩️ Undo Stock Out <span>(galti se out hua barcode wapas lo)</span></h3>
+        <!-- ===== UNDO BOX (panel ke ANDAR, button ke baad) ===== -->
+        <div class="panel" style="margin-top:18px;padding:16px 18px;border-color:#5A2026;background:var(--panel)">
+          <h3 style="margin:0 0 8px 0;font-size:14.5px">↩️ Undo Stock Out <span style="font-weight:400;color:var(--muted);font-size:12.5px">(galti se out hua barcode wapas lo)</span></h3>
           <p class="desc" style="margin:0 0 12px 0">Barcode daalo jo galti se out hua tha — stock wapas add ho jayega aur record delete.</p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <input type="text" id="undo_serial" placeholder="e.g. 0064602079363293384" style="flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#121212;color:var(--text)">
@@ -93,6 +90,9 @@ $page = 'stock-out';
           </div>
           <div id="undoResult" style="margin-top:10px"></div>
         </div>
+        <!-- ===== / UNDO BOX ===== -->
+      </div>
+    </div>
 
     <!-- ============ TAB 2: Sheet Upload ============ -->
     <div class="tab-pane" id="pane2">
@@ -106,7 +106,7 @@ $page = 'stock-out';
         <input type="file" id="upFile" accept=".pdf,.xlsx,.xls,.csv,.docx,.txt" style="display:none">
 
         <div class="upload-line">
-          <button class="btn" id="btnPreview">Preview</button>
+          <button class="btn blue" id="btnPreview">Preview</button>
           <button class="btn red" id="btnUploadOut" disabled>Upload &amp; Stock Out</button>
         </div>
 
@@ -176,14 +176,12 @@ $('m_serial').addEventListener('input', function(){
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (d.success && d.found && d.data && d.data.level){
-        // Registered barcode mila → level + qty + stock bharo
         $('m_name').value   = d.data.item_name || '';
         $('m_level').value  = d.data.level || '';
         $('m_pcsqty').value = d.data.pcs_qty || '';
         $('m_stock').value  = d.data.current_stock_pcs || 0;
         $('m_lookup').textContent = 'Barcode found — ' + d.data.level + ' (' + d.data.pcs_qty + ' pcs). Stock: ' + d.data.current_stock_pcs;
       } else if (d.success && d.found && d.data){
-        // Item code exact — product hai par barcode nahi
         $('m_name').value   = d.data.item_name || '';
         $('m_level').value  = '';
         $('m_pcsqty').value = '';
@@ -256,7 +254,6 @@ function closeScanModal(){
   $('scanInput').value = '';
 }
 $('scanModal').addEventListener('click', function(e){
-  // Overlay (bahar) click → close
   if (e.target === this) closeScanModal();
 });
 
@@ -278,18 +275,13 @@ function setScanLockUI(){
 }
 $('scanLockBtn').addEventListener('click', function(){ scanUnlocked = !scanUnlocked; setScanLockUI(); });
 
-/* Scanner message box */
 function scanMsg(html, type){
   var el = $('scanMsg');
   el.className = 'msg-box ' + (type || 'info');
   el.innerHTML = html;
 }
 
-/* Buffer cleanup helpers */
-function scanResetBuffer(){
-  scanBuffer = '';
-  $('scanInput').value = '';
-}
+function scanResetBuffer(){ scanBuffer = ''; $('scanInput').value = ''; }
 function scanPauseStop(){ if (scanPauseTimer){ clearTimeout(scanPauseTimer); scanPauseTimer = null; } }
 function scanArmPause(){
   scanPauseStop();
@@ -300,17 +292,11 @@ function scanArmPause(){
   }, 180);
 }
 
-/* GLOBAL KEYBOARD CAPTURE — modal khula ho to scanner kaam kare
-   chahe focus kahin bhi ho (mouse point kie bina). */
+/* GLOBAL KEYBOARD CAPTURE — modal khula ho to scanner kaam kare */
 document.addEventListener('keydown', function(e){
   if (!scanModalOpen) return;
-
-  // Escape → modal band
   if (e.key === 'Escape'){ e.preventDefault(); closeScanModal(); return; }
-
   e.preventDefault();
-
-  // Enter → buffer process karo
   if (e.key === 'Enter'){
     scanPauseStop();
     var s = scanBuffer.trim();
@@ -319,13 +305,11 @@ document.addEventListener('keydown', function(e){
     $('scanInput').focus();
     return;
   }
-  // Backspace
   if (e.key === 'Backspace'){
     scanBuffer = scanBuffer.slice(0, -1);
     $('scanInput').value = scanBuffer;
     return;
   }
-  // Normal char → buffer mein add + auto-pause (bina Enter scanner ke liye)
   if (e.key.length === 1){
     scanBuffer += e.key;
     $('scanInput').value = scanBuffer;
@@ -338,20 +322,16 @@ function scanProcess(s){
   if (scanBusy) return;
   s = s.trim();
   if (!s) return;
-
-  // Lock off → ignore
   if (!scanUnlocked){
     scanMsg('🔒 LOCKED — unlock first', 'danger');
     scanResetBuffer();
     $('scanInput').focus();
     return;
   }
-
   scanBusy = true;
   var fd = new FormData();
   fd.append('serial', s);
   fd.append('remark', 'Scanner');
-
   fetch('../ajax/stock_out_scanner.php', { method: 'POST', body: fd })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -389,7 +369,6 @@ function loadScanHistory(){
   });
 }
 
-
 /* ---------- SHEET UPLOAD (file select hote hi auto-preview) ---------- */
 var selFile = null;
 $('upZone').addEventListener('click', function(){ $('upFile').click(); });
@@ -398,7 +377,6 @@ $('upFile').addEventListener('change', function(){
   if (selFile) doPreview();
 });
 
-/* File → server par bhej kar preview render */
 function doPreview(){
   if (!selFile) { showMsg('Please select a file first.', 'danger'); return; }
   var fd = new FormData();
@@ -406,8 +384,6 @@ function doPreview(){
   postForm('../ajax/upload_sheet.php', fd, function(d){
     if (!d.success) return;
     $('btnUploadOut').disabled = false;
-
-    // Har row: checkbox (select) + barcode + level + name + pcs qty
     var rows = d.items.map(function(it){
       var lvl = '<span class="tag ' + (it.level === 'CARTON' ? 'low' : (it.level === 'BOX' ? 'out' : 'in')) + '">' + esc(it.level) + '</span>';
       return '<tr><td><input type="checkbox" class="row-chk" data-serial="'+esc(it.barcode)+'" checked></td>'+
@@ -415,14 +391,11 @@ function doPreview(){
              '<td>'+esc(it.item_name)+'</td>'+
              '<td><span class="tag in">'+esc(it.pcs_qty)+'</span></td></tr>';
     }).join('');
-
     $('previewArea').innerHTML =
       '<h3 style="margin:0 0 10px 0;font-size:14px">Preview - '+d.total+' barcodes '+
       '<label style="font-weight:400;font-size:12px;margin-left:10px"><input type="checkbox" id="chkAll" checked> Select all</label></h3>' +
       '<table><thead><tr><th>Sel</th><th>Barcode</th><th>Level</th><th>Items Name</th><th><span class="tag in">Pcs Qty</span></th></tr></thead>'+
       '<tbody>'+rows+'</tbody></table>';
-
-    // "Select all" checkbox
     $('chkAll').addEventListener('change', function(){
       var on = this.checked;
       document.querySelectorAll('.row-chk').forEach(function(c){ c.checked = on; });
@@ -430,7 +403,6 @@ function doPreview(){
   });
 }
 
-/* Checked rows ke barcodes collect karo (JSON array) */
 function getSelectedSerials(){
   var list = [];
   document.querySelectorAll('.row-chk:checked').forEach(function(c){ list.push(c.getAttribute('data-serial')); });
@@ -439,7 +411,6 @@ function getSelectedSerials(){
 
 $('btnPreview').addEventListener('click', doPreview);
 
-/* Upload → sirf selected barcodes bhejo */
 $('btnUploadOut').addEventListener('click', function(){
   if (!selFile) return;
   var sel = getSelectedSerials();
