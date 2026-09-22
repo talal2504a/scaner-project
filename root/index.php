@@ -166,7 +166,7 @@ function renderItems(list){
           displayValue:false, background:'#ffffff', lineColor:'#000000'
         });
       }catch(e){ svg.style.display='none'; }
-svgs[i]);
+})(svgs[i]);
   }
 }
 function deleteItem(code){
