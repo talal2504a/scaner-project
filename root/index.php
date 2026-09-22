@@ -117,11 +117,12 @@ function renderRecent(list){
 }
 
 /* ---- Items / Cartons: collapsed = total CTN, click = expand barcodes ---- */
+/* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
 function toggleCtn(head){
   var body = head.nextElementSibling;
   if(!body) return;
-  var open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
+  var open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
   head.classList.toggle('open', !open);
 }
 function toggleCtnEvent(e, el){
