@@ -10,6 +10,23 @@ $page = 'products';
 <title>Register Product — Diwan International Pvt Ltd</title>
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 </head>
+<style>
+/* ---- Styled file upload ---- */
+.file-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.file-upload input[type=file]{display:none}
+.file-upload .up-btn{
+  background:var(--panel-2);color:var(--text);border:1.5px solid var(--line);
+  border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.file-upload .up-btn:hover{background:var(--amber);border-color:var(--amber);color:#fff}
+.file-upload .fname{
+  font-size:12.5px;color:var(--muted);
+  background:var(--panel-2);border:1px dashed var(--line);
+  border-radius:8px;padding:8px 12px;min-width:180px;flex:1;
+}
+.file-upload .fname b{color:var(--amber)}
+</style>
 <body>
 <div class="app">
   <?php include 'sidebar.php'; ?>
