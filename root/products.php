@@ -9,7 +9,18 @@
 </head>
 
 <style>
-  
+  .modal-box .modal-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--line);
+}
+.modal-box .modal-header h2{margin:0;font-size:18px;font-weight:600;color:var(--text)}
+.modal-close{
+  width:32px;height:32px;border-radius:50%;background:var(--panel-2);
+  border:1px solid var(--line);color:var(--muted);font-size:18px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .15s;flex-shrink:0;
+}
+.modal-close:hover{background:var(--rust-bg);color:var(--rust);border-color:#5A2026}
 /* ---- Delete Confirmation Modal (same style as dashboard) ---- */
 .del-modal-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
