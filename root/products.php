@@ -353,16 +353,39 @@ var sheetToken = '';
         });
     }
 
+      /* ---- Delete Modal ---- */
+    var delPending = null;
+    function openDelModal(title, code, msg, type, value){
+      $('delModalTitle').textContent = title;
+      $('delModalMsg').textContent = msg;
+      $('delModalCode').style.display = code ? 'inline-block' : 'none';
+      $('delModalCode').textContent = code || '';
+      delPending = { type: type, value: value };
+      $('delModal').classList.add('open');
+    }
+    function closeDelModal(){
+      $('delModal').classList.remove('open');
+      delPending = null;
+    }
+    $('delModalConfirm').addEventListener('click', function(){
+      if(!delPending) return;
+      var p = delPending;
+      closeDelModal();
+      if(p.type === 'product') doDeleteProduct(p.value);
+    });
+
     function delProduct(item_code) {
-      if (!confirm('Delete this product (item code)?\n' + item_code)) return;
+      openDelModal('Delete Product', item_code, 'Delete this product and ALL its stock? Ye wapas nahi aayega.', 'product', item_code);
+    }
+    function doDeleteProduct(item_code) {
       fetch('../ajax/delete_product.php?item_code=' + encodeURIComponent(item_code))
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (d.success) { loadProducts($('searchBox').value); }
-          else showMsg(d.message || 'Error', 'danger');
-        });
+          else alert(d.message || 'Error');
+        })
+        .catch(function(){ alert('Delete error.'); });
     }
-
     /* ---- Select all toggle ---- */
     $('chkAllHead').addEventListener('change', function(){
       var on = this.checked;
