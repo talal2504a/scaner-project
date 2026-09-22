@@ -1,14 +1,38 @@
 <?php
-// root/stock-in.php — Manual + Sheet tab (barcode → auto level/qty)
-$page = 'stock-in';
+// root/register.php — naya product + barcode register (Item ID | Item Name | Barcode)
+$page = 'products';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock In — Diwan International Pvt Ltd</title>
+<title>Register Product — Diwan International Pvt Ltd</title>
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
+<style>
+/* ---- Styled file upload ---- */
+.file-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.file-upload input[type=file]{display:none !important}
+.file-upload .up-btn{
+  background:var(--panel-2);color:var(--text);border:1.5px solid var(--line);
+  border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.file-upload .up-btn:hover{background:var(--amber);border-color:var(--amber);color:#fff}
+.file-upload .fname{
+  font-size:12.5px;color:var(--muted);
+  background:var(--panel-2);border:1px dashed var(--line);
+  border-radius:8px;padding:8px 12px;min-width:180px;flex:1;
+}
+.file-upload .fname b{color:var(--amber)}
+/* ---- Progress wrap (sirf show hone pe dikhe) ---- */
+.progress-wrap{display:none;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.progress-bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.progress-text{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-family:'Inter',sans-serif}
+.progress-spinner{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
+.pct{color:var(--amber);font-weight:600;margin-left:auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -17,74 +41,80 @@ $page = 'stock-in';
   <main>
     <div class="pagehead">
       <div>
-        <h1>Stock In</h1>
-        <p class="desc">Scan / type barcode — level ke hisaab se pieces auto add hote hain (CARTON=180, BOX=30, PCS=1)</p>
+        <h1>Register Product</h1>
+        <p class="desc">Add a new item / barcode to the system</p>
       </div>
     </div>
 
     <div id="msgBox" class="msg-box"></div>
 
-    <div class="nav-tabs">
-      <button id="t1" class="active">Manual / Scan</button>
-      <button id="t2">Sheet Upload</button>
+    <!-- Tabs -->
+    <div class="field" style="max-width:760px; margin-bottom:12px">
+      <button class="btn tab-btn active" id="tabManual">Manual Register</button>
+      <button class="btn tab-btn" id="tabSheet">Sheet Upload (Bulk)</button>
     </div>
 
-    <!-- ============ TAB 1: Manual ============ -->
-    <div class="tab-pane active" id="pane1">
-      <div class="panel" style="max-width:760px">
-        <div class="form-wrap">
-
-          <div class="field">
-            <label>Barcode *</label>
-            <input type="text" id="m_serial" placeholder="Scan or type barcode">
-            <div class="helper-note" id="m_lookup">Type barcode to auto-fill item info.</div>
-          </div>
-
-          <div class="field">
-            <label>Level (auto)</label>
-            <input type="text" id="m_level" readonly style="background:#EFEFEF" placeholder="CARTON / BOX / PCS">
-          </div>
-
-          <div class="field">
-            <label>Item Name (auto-fill)</label>
-            <input type="text" id="m_name" readonly style="background:#EFEFEF">
-          </div>
-
-          <div class="field">
-            <label>Pcs Qty (auto)</label>
-            <input type="text" id="m_pcsqty" readonly style="background:#EFEFEF" placeholder="180 / 30 / 1">
-          </div>
-
-          <div class="field">
-            <label>Available Stock (Pcs)</label>
-            <input type="text" id="m_stock" readonly style="background:#EFEFEF">
-          </div>
-
-          <div class="field" style="grid-column:1/-1">
-            <label>Remark</label>
-            <input type="text" id="m_remark" placeholder="e.g. Vendor delivery #123">
-          </div>
+    <!-- Manual Form -->
+    <div class="panel" style="max-width:760px" id="panelManual">
+      <div class="split-row">
+        <div class="field">
+          <label>Item ID *</label>
+          <input type="text" id="r_itemid" placeholder="e.g. 45125">
         </div>
-
-        <button class="btn green" id="btnSubmitIn">+ Stock In</button>
+        <div class="field">
+          <label>Item Name *</label>
+          <input type="text" id="r_itemname" placeholder="e.g. Chint breaker">
+        </div>
       </div>
+
+      <div class="split-row">
+        <div class="field">
+          <label>Barcode <span style="color:var(--muted)">(optional)</span></label>
+          <input type="text" id="r_barcode" placeholder="e.g. P001001000001">
+        </div>
+      </div>
+
+      <button class="btn amber" id="btnReg">Register Product</button>
     </div>
 
-    <!-- ============ TAB 2: Sheet Upload ============ -->
-    <div class="tab-pane" id="pane2">
-      <div class="panel" style="max-width:820px">
-        <div class="upload-zone" id="upZone">
-          <div class="up-icon">📄</div>
-          <div><b>Click</b> or drag a file — <b>PDF / Excel / Word / CSV</b></div>
-                    <div class="meta">Format: Item Code | Item Name | CTN Qty | Barcode</div>
+    <!-- Sheet Upload -->
+    <div class="panel" style="max-width:760px; display:none" id="panelSheet">
+      <p class="desc" style="margin-bottom:12px">
+        Hierarchy sheet — columns auto-detected from headers (Item ID | Items Name | Barcode minimum).<br>
+        Level (L/B/P), Parent, Boxes pr Ctn, Pcs pr Box, Total Pcs — headers se mil jaayenge.
+      </p>
+      <div class="field" style="margin-bottom:12px">
+        <label>Sheet File (xlsx, xls, csv, txt) *</label>
+        <div class="file-upload">
+          <label class="up-btn" for="r_sheet">📂 &nbsp;Choose File</label>
+          <input type="file" id="r_sheet" accept=".xlsx,.xls,.csv,.txt">
+          <span class="fname" id="sheetFileName">No file selected</span>
         </div>
-        <input type="file" id="upFile" accept=".pdf,.xlsx,.xls,.csv,.docx,.txt" style="display:none">
-        <div class="upload-line">
-          <button class="btn" id="btnPreview">Preview</button>
-          <button class="btn" id="btnUploadIn" disabled>Upload &amp; Stock In</button>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <button class="btn green" id="btnPreview">Preview</button>
+        <button class="btn red" id="btnSheetUpload" disabled>Upload &amp; Register Sheet</button>
+      </div>
+      <!-- Progress bar (inline hidden — pakka) -->
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-bar" id="progressBar"></div>
+        <div class="progress-text">
+          <div class="progress-spinner"></div>
+          <span id="progressLabel">Uploading...</span>
+          <span class="pct" id="progressPct">0%</span>
         </div>
-
-        <div id="previewArea" style="margin-top:18px"></div>
+      </div>
+      <div id="sheetStatus" style="margin-top:10px"></div>
+      <div id="sheetPreviewWrap" class="panel" style="display:none;margin-top:12px;padding:0;overflow:auto;max-height:300px">
+        <table>
+          <thead>
+            <tr>
+              <th>Sel</th><th>Level</th><th>Barcode</th><th>Items Name</th>
+              <th><span class="tag in">Pcs Qty</span></th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="sheetPreview"></tbody>
+        </table>
       </div>
     </div>
   </main>
@@ -92,126 +122,167 @@ $page = 'stock-in';
 
 <script src="assets/js/app.js?v=<?php echo filemtime('assets/js/app.js'); ?>"></script>
 <script>
-// Tabs
-function switchPane(id){
-  document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.nav-tabs button').forEach(function(b){ b.classList.remove('active'); });
-  var pane = $(id);
-  if (pane) pane.classList.add('active');
-  var btnId = $('t1') && id==='pane1' ? 't1' : 't2';
-  var btn = $(btnId); if (btn) btn.classList.add('active');
-}
-$('t1').addEventListener('click', function(){ switchPane('pane1'); });
-$('t2').addEventListener('click', function(){ switchPane('pane2'); });
-
-// ---- Auto-lookup barcode -> item info ----
-$('m_serial').addEventListener('input', function(){
-  var s = this.value.trim();
-  if (s.length < 3) {
-    $('m_lookup').textContent = 'Type barcode to auto-fill item info.';
-    $('m_name').value = ''; $('m_level').value = ''; $('m_pcsqty').value = ''; $('m_stock').value = '';
-    return;
+// ---------- Progress helper (inline display — CSS override nahi kar sakta) ----------
+function showProgress(label, pct){
+  $('progressWrap').style.display = 'block';
+  $('progressLabel').textContent = label;
+  if (pct !== null){
+    $('progressPct').textContent = pct + '%';
+    $('progressBar').style.width = pct + '%';
+  } else {
+    $('progressPct').textContent = '';
+    $('progressBar').style.width = '100%';
+    $('progressBar').style.opacity = '.4';
   }
-  fetch('../ajax/search_product.php?serial='+encodeURIComponent(s))
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (d.success && d.found && d.data && d.data.level){
-        // Registered barcode mila → level + qty + stock bharo
-        $('m_name').value   = d.data.item_name || '';
-        $('m_level').value  = d.data.level || '';
-        $('m_pcsqty').value = d.data.pcs_qty || '';
-        $('m_stock').value  = d.data.current_stock_pcs || 0;
-        $('m_lookup').textContent = 'Barcode found — ' + d.data.level +
-          ' (+' + d.data.pcs_qty + ' pcs). Stock: ' + d.data.current_stock_pcs;
-      } else if (d.success && d.found && d.data){
-        // Item code exact — product hai par barcode nahi
-        $('m_name').value   = d.data.item_name || '';
-        $('m_level').value  = '';
-        $('m_pcsqty').value = '';
-        $('m_stock').value  = d.data.current_stock_pcs || 0;
-        $('m_lookup').textContent = 'Item code found, but no barcode registered — register barcode first.';
-      } else {
-        $('m_name').value = ''; $('m_level').value = ''; $('m_pcsqty').value = ''; $('m_stock').value = '';
-        $('m_lookup').textContent = 'Barcode not registered — please register the sheet first.';
+}
+function hideProgress(){
+  $('progressWrap').style.display = 'none';
+  $('progressBar').style.width = '0%';
+  $('progressBar').style.opacity = '1';
+}
+
+// XHR upload — REAL upload progress (bytes), then honest spinner for processing
+function uploadWithProgress(url, fd, onDone){
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+
+  // REAL upload progress (file bytes tracking)
+  xhr.upload.onprogress = function(e){
+    if (e.lengthComputable){
+      var pct = Math.round((e.loaded / e.total) * 100);
+      showProgress('Uploading file...', pct);
+    }
+  };
+
+  xhr.onload = function(){
+    if (xhr.status === 200){
+      // Upload done — ab server processing (honest spinner, no fake %)
+      showProgress('Processing...', null);
+      var d = null;
+      try {
+        d = JSON.parse(xhr.responseText);
+      } catch(ex){
+        hideProgress();
+        onDone({success:false, message:'Invalid response'});
+        return;
       }
-    });
+      hideProgress();
+      onDone(d);
+    } else {
+      hideProgress();
+      onDone({success:false, message:'Upload failed ('+xhr.status+')'});
+    }
+  };
+
+  xhr.onerror = function(){
+    hideProgress();
+    onDone({success:false, message:'Network error'});
+  };
+
+  xhr.send(fd);
+}
+
+// Tab switching
+$('tabManual').addEventListener('click', function(){
+  $('panelManual').style.display = '';
+  $('panelSheet').style.display = 'none';
+  $('tabManual').classList.add('active');
+  $('tabSheet').classList.remove('active');
+});
+$('tabSheet').addEventListener('click', function(){
+  $('panelManual').style.display = 'none';
+  $('panelSheet').style.display = '';
+  $('tabSheet').classList.add('active');
+  $('tabManual').classList.remove('active');
 });
 
-$('btnSubmitIn').addEventListener('click', function(){
+// Manual register (Item ID + Item Name + optional Barcode)
+function productFd(){
   var fd = new FormData();
-  fd.append('barcode', $('m_serial').value.trim());
-  fd.append('remark',  $('m_remark').value.trim());
-  postForm('../ajax/stock_in_form.php', fd, function(d){
+  fd.append('item_code',  $('r_itemid').value.trim());
+  fd.append('item_name',  $('r_itemname').value.trim());
+  fd.append('barcode',    $('r_barcode').value.trim());
+  return fd;
+}
+$('btnReg').addEventListener('click', function(){
+  postForm('../ajax/register_product.php', productFd(), function(d){
     if (d.success){
-      $('m_remark').value = '';
-      $('m_serial').value = '';
-      $('m_name').value = ''; $('m_level').value = ''; $('m_pcsqty').value = ''; $('m_stock').value = '';
-      $('m_lookup').textContent = 'Type barcode to auto-fill item info.';
-      $('m_serial').focus();
+      ['r_itemid','r_itemname','r_barcode'].forEach(function(id){ var el=$(id); if(el) el.value=''; });
+      $('r_itemid').focus();
     }
   });
 });
-
-// ---- Sheet upload ----
-var selFile = null;
-$('upZone').addEventListener('click', function(){ $('upFile').click(); });
-$('upFile').addEventListener('change', function(){
-  selFile = this.files[0];
-  if (selFile) doPreview();
+// File selected → name dikhao
+$('r_sheet').addEventListener('change', function(){
+  var f = this.files[0];
+  $('sheetFileName').innerHTML = f
+    ? '<b>'+f.name+'</b> · '+(f.size/1024).toFixed(0)+' KB'
+    : 'No file selected';
 });
-function doPreview(){
-  if (!selFile) { showMsg('Please select a file first.', 'danger'); return; }
+// Sheet preview — XHR with REAL upload progress
+$('btnPreview').addEventListener('click', function(){
+  var file = $('r_sheet').files[0];
+  if (!file) { $('sheetStatus').innerHTML = '<span class="tag low">Please select a file first.</span>'; return; }
   var fd = new FormData();
-  fd.append('file', selFile);
-  fd.append('require_registered', '1');
-  postForm('../ajax/upload_sheet.php', fd, function(d){
-    if (!d.success) return;
-    $('btnUploadIn').disabled = false;
-    if (d.has_unregistered) {
-      showMsg((d.unregistered||[]).length + ' rows products mein add nahi hain — pehle Products page se add karo.', 'danger');
-    }
-    var rows = d.items.map(function(it){
-      var lvl = '<span class="tag ' + (it.level === 'CARTON' ? 'low' : (it.level === 'BOX' ? 'out' : 'in')) + '">' + esc(it.level) + '</span>';
-      var bad = it.registered === false;
-      return '<tr' + (bad ? ' style="opacity:.55"' : '') + '>'+
-             '<td><input type="checkbox" class="row-chk" data-serial="'+esc(it.barcode)+'" '+(bad?'disabled':'checked')+'></td>'+
-             '<td class="mono">'+esc(it.barcode)+'</td>'+
-             '<td>'+lvl+'</td>'+
-             '<td>'+esc(it.item_name)+'</td>'+
-             '<td>'+(bad ? '<span class="tag out">Not registered</span>' : '<span class="tag in">'+esc(it.pcs_qty)+'</span>')+'</td></tr>';
+  fd.append('sheet', file);
+
+  $('btnPreview').disabled = true;
+  $('btnSheetUpload').disabled = true;
+
+  uploadWithProgress('../ajax/sheet_preview.php', fd, function(d){
+    $('btnPreview').disabled = false;
+    var el = $('sheetStatus');
+    if (!d.success){ el.innerHTML = '<span class="tag low">' + (d.message || 'Error') + '</span>'; return; }
+    var rows = (d.rows || []).map(function(p){
+      var st = p.exists ? '<span class="tag low">exists</span>' : '<span class="tag ok">new</span>';
+      var lvl = '<span class="tag ' + (p.level === 'CARTON' ? 'low' : (p.level === 'BOX' ? 'out' : 'in')) + '">' + esc(p.level) + '</span>';
+      return '<tr><td><input type="checkbox" class="row-chk" data-serial="'+esc(p.barcode)+'" checked></td>'+
+             '<td>'+lvl+'</td><td class="mono">'+esc(p.barcode)+'</td><td>'+esc(p.item_name)+'</td>'+
+             '<td><span class="tag in">'+esc(p.pcs_qty)+'</span></td><td>'+st+'</td></tr>';
     }).join('');
-    $('previewArea').innerHTML =
-      '<h3 style="margin:0 0 10px 0;font-size:14px">Preview - '+d.total+' barcodes '+
-      '<label style="font-weight:400;font-size:12px;margin-left:10px"><input type="checkbox" id="chkAll" checked> Select all</label></h3>' +
-      '<table><thead><tr><th>Sel</th><th>Barcode</th><th>Level</th><th>Items Name</th><th><span class="tag in">Pcs Qty</span></th></tr></thead>'+
-      '<tbody>'+rows+'</tbody></table>';
+    $('sheetPreview').innerHTML = rows;
+    $('sheetPreviewWrap').style.display = (rows ? 'block' : 'none');
+    $('btnSheetUpload').disabled = false;
+    var bl = d.byLevel || {};
+    el.innerHTML = '<label style="margin-right:10px"><input type="checkbox" id="chkAll" checked> Select all</label> ' +
+      '<span class="tag ok">Total: '+d.total+' | CARTON: '+(bl.CARTON||0)+' | BOX: '+(bl.BOX||0)+' | PCS: '+(bl.PCS||0)+
+      ' | New: '+d.newCount+' | Already exist: '+d.dupCount+'</span>';
     $('chkAll').addEventListener('change', function(){
       var on = this.checked;
-      document.querySelectorAll('.row-chk').forEach(function(c){ if (!c.disabled) c.checked = on; });
+      document.querySelectorAll('.row-chk').forEach(function(c){ c.checked = on; });
     });
   });
-}
-// collect selected barcodes
-function getSelectedSerials(){
+});
+
+// Checked rows ke barcodes collect karo
+function getSelSerial(){
   var list = [];
   document.querySelectorAll('.row-chk:checked').forEach(function(c){ list.push(c.getAttribute('data-serial')); });
   return list;
 }
 
-$('btnPreview').addEventListener('click', doPreview);
+// Sheet upload (sirf selected rows) — XHR with REAL upload progress
+$('btnSheetUpload').addEventListener('click', function(){
+  var file = $('r_sheet').files[0];
+  if (!file) { $('sheetStatus').innerHTML = '<span class="tag low">Please select a file first.</span>'; return; }
+  var sel = getSelSerial();
+  if (!sel.length) { $('sheetStatus').innerHTML = '<span class="tag low">Select at least one row.</span>'; return; }
 
-$('btnUploadIn').addEventListener('click', function(){
-  if (!selFile) return;
-  var sel = getSelectedSerials();
-  if (!sel.length) { showMsg('Select at least one row.', 'danger'); return; }
   var fd = new FormData();
-  fd.append('file', selFile);
+  fd.append('sheet', file);
   fd.append('selected', JSON.stringify(sel));
-  postForm('../ajax/stock_in_sheet.php', fd, function(d){
+
+  $('btnSheetUpload').disabled = true;
+
+  uploadWithProgress('../ajax/register_product.php', fd, function(d){
+    $('btnSheetUpload').disabled = false;
+    var el = $('sheetStatus');
     if (d.success){
-      $('btnUploadIn').disabled = true;
-      $('previewArea').innerHTML = '';
-      $('upFile').value = ''; selFile = null;
+      el.innerHTML = '<span class="tag ok">Done! ' + d.message + '</span>';
+      $('r_sheet').value='';
+      $('sheetPreviewWrap').style.display = 'none';
+    } else {
+      el.innerHTML = '<span class="tag low">' + (d.message || 'Error') + '</span>';
     }
   });
 });
