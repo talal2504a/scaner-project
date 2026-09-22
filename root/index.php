@@ -26,21 +26,41 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 <style>
 /* ---- Items / Cartons panel (dashboard) ---- */
-.ctn-head{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s}
-.ctn-head:hover{background:rgba(255,255,255,.04)}
+.ctn-head{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;
+  transition:background .2s;
+}
+.ctn-head:hover{background:rgba(255,255,255,.05)}
 .ctn-head .name{font-size:13px;font-weight:500;color:var(--text)}
 .ctn-head .meta{font-size:11.5px;color:var(--muted)}
 .ctn-head .right{display:flex;align-items:center;gap:10px;white-space:nowrap}
-.ctn-head .caret{color:var(--amber);font-size:12px;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;background:var(--panel-2);border:1px solid var(--line);transition:transform .3s ease,background .2s;flex-shrink:0}
-.ctn-head.open .caret{transform:rotate(90deg);background:var(--amber);color:#fff;border-color:var(--amber)}
-.ctn-body{max-height:0;overflow:hidden;padding:0 0 0 14px;border-bottom:1px solid var(--line);transition:max-height .35s ease,padding .35s ease}
-.ctn-body.open{max-height:600px;padding:6px 0 12px 14px}
+.ctn-head .caret{
+  color:var(--muted);font-size:11px;display:inline-block;
+  transition:transform .35s cubic-bezier(.4,0,.2,1),color .2s;
+}
+.ctn-head:hover .caret{color:var(--amber)}
+.ctn-head.open .caret{transform:rotate(90deg);color:var(--amber)}
+.ctn-body{
+  max-height:0;overflow:hidden;padding:0 0 0 14px;border-bottom:1px solid var(--line);
+  transition:max-height .4s ease,padding .3s ease;
+}
+.ctn-body.open{max-height:800px;padding:6px 0 12px 14px}
 .ctn-item:last-child .ctn-head{border-bottom:none}
 .ctn-item:last-child .ctn-body{border-bottom:none}
-.ctn-line{font-size:12.5px;padding:3px 0;color:var(--text);display:flex;align-items:center;gap:8px;border-radius:6px;transition:background .15s}
-.ctn-line:hover{background:rgba(229,20,46,.06)}
+.ctn-line{
+  font-size:12.5px;padding:4px 8px;color:var(--text);display:flex;align-items:center;gap:8px;
+  border-radius:6px;opacity:0;transform:translateX(-8px);
+  transition:opacity .25s ease,transform .25s ease,background .15s;
+}
+.ctn-body.open .ctn-line{opacity:1;transform:translateX(0)}
+.ctn-body.open .ctn-line:nth-child(1){transition-delay:.05s}
+.ctn-body.open .ctn-line:nth-child(2){transition-delay:.10s}
+.ctn-body.open .ctn-line:nth-child(3){transition-delay:.15s}
+.ctn-body.open .ctn-line:nth-child(4){transition-delay:.20s}
+.ctn-body.open .ctn-line:nth-child(5){transition-delay:.25s}
+.ctn-line:hover{background:rgba(229,20,46,.08)}
 .ctn-line .idx{color:var(--muted);display:inline-block;width:28px}
-</style>
 </head>
 <body>
 <div class="app">
