@@ -12,6 +12,8 @@ $page = 'products';
 </head>
 <style>
 /* ---- Styled file upload ---- */
+.file-upload input[type=file]{display:none !important}
+.file-upload input[type=file]{display:none !important}
 .file-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .file-upload input[type=file]{display:none}
 .file-upload .up-btn{
