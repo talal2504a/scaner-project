@@ -22,8 +22,19 @@ if ($isConsumed === 0 && $pcs > 0) {
     $upd->execute();
 }
 
-// Stock_in cleanup + barcode delete
-$conn->prepare("DELETE FROM stock_in WHERE barcode = ?")->bind_param('s', $barcode)->execute();
-$conn->prepare("DELETE FROM barcodes WHERE barcode = ?")->bind_param('s', $barcode)->execute();
+// Stock_in cleanup + barcode delete (proper steps — chain mat karo)
+$d1 = $conn->prepare("DELETE FROM stock_in WHERE barcode = ?");
+$d1->bind_param('s', $barcode);
+$d1->execute();
+
+// Stock_out history bhi clean (consumed barcode ke liye)
+$d2 = $conn->prepare("DELETE FROM stock_out WHERE barcode = ?");
+$d2->bind_param('s', $barcode);
+$d2->execute();
+
+// Barcode delete
+$d3 = $conn->prepare("DELETE FROM barcodes WHERE barcode = ?");
+$d3->bind_param('s', $barcode);
+$d3->execute();
 
 jout(['success' => true, 'message' => 'Barcode deleted. Stock updated.']);
