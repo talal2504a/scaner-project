@@ -14,6 +14,20 @@ $page = 'stock-out';
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 </head>
 <body>
+  <!-- Undo Confirm Modal -->
+<div class="del-modal-overlay" id="undoModal">
+  <div class="del-modal-box">
+    <button type="button" class="del-modal-close" onclick="closeUndoModal()">&times;</button>
+    <div class="del-icon">↩️</div>
+    <h3 id="undoModalTitle">Undo Stock Out</h3>
+    <span class="del-code" id="undoModalCode" style="display:none"></span>
+    <p id="undoModalMsg">Last stock out wapas aayega?</p>
+    <div class="del-modal-actions">
+      <button type="button" class="btn ghost" onclick="closeUndoModal()">Cancel</button>
+      <button type="button" class="btn amber" id="undoModalConfirm">Undo</button>
+    </div>
+  </div>
+</div>
 <div class="app">
   <?php include 'sidebar.php'; ?>
 
@@ -81,17 +95,15 @@ $page = 'stock-out';
         <button type="button" class="btn red" id="btnSubmitOut">- Stock Out</button>
 
         <!-- ===== UNDO BOX (panel ke ANDAR, button ke baad) ===== -->
+               <!-- ===== UNDO BOX (sirf Undo Last) ===== -->
         <div class="panel" style="margin-top:18px;padding:16px 18px;border-color:#5A2026;background:var(--panel)">
-          <h3 style="margin:0 0 8px 0;font-size:14.5px">↩️ Undo Stock Out <span style="font-weight:400;color:var(--muted);font-size:12.5px">(galti se out hua barcode wapas lo)</span></h3>
-          <p class="desc" style="margin:0 0 12px 0">Barcode daalo jo galti se out hua tha — stock wapas add ho jayega aur record delete.</p>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <input type="text" id="undo_serial" placeholder="Barcode (optional — khali chhoro for last)" style="flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#121212;color:var(--text)">
-            <button type="button" class="btn amber" id="btnUndoOut">↩️ Undo Barcode</button>
-            <button type="button" class="btn ghost" id="btnUndoLast">↩️ Undo Last</button>
-          </div>
+          <h3 style="margin:0 0 8px 0;font-size:14.5px">↩️ Undo Last Stock Out <span style="font-weight:400;color:var(--muted);font-size:12.5px">(galti se out hua stock wapas lo)</span></h3>
+          <p class="desc" style="margin:0 0 12px 0">Aakhri stock out wapas add ho jayega aur record delete.</p>
+          <button type="button" class="btn amber" id="btnUndoLast">↩️ Undo Last</button>
           <div id="undoResult" style="margin-top:10px"></div>
         </div>
         <!-- ===== / UNDO BOX ===== -->
+
       </div>
     </div>
 
