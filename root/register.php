@@ -9,13 +9,10 @@ $page = 'products';
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Register Product — Diwan International Pvt Ltd</title>
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
-</head>
 <style>
 /* ---- Styled file upload ---- */
-.file-upload input[type=file]{display:none !important}
-.file-upload input[type=file]{display:none !important}
 .file-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.file-upload input[type=file]{display:none}
+.file-upload input[type=file]{display:none !important}
 .file-upload .up-btn{
   background:var(--panel-2);color:var(--text);border:1.5px solid var(--line);
   border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;
@@ -29,14 +26,15 @@ $page = 'products';
 }
 .file-upload .fname b{color:var(--amber)}
 /* ---- Progress wrap (sirf .show pe dikhe) ---- */
-.progress-wrap{display:none;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
-.progress-wrap.show{display:block}
+.progress-wrap{display:none !important;margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.progress-wrap.show{display:block !important}
 .progress-bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:6px}
 .progress-text{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-family:'Inter',sans-serif}
 .progress-spinner{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
 .pct{color:var(--amber);font-weight:600;margin-left:auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
+</head>
 <body>
 <div class="app">
   <?php include 'sidebar.php'; ?>
@@ -77,7 +75,7 @@ $page = 'products';
         </div>
       </div>
 
-      <button class="btn" id="btnReg">Register Product</button>
+      <button class="btn amber" id="btnReg">Register Product</button>
     </div>
 
     <!-- Sheet Upload -->
@@ -86,7 +84,7 @@ $page = 'products';
         Hierarchy sheet — columns auto-detected from headers (Item ID | Items Name | Barcode minimum).<br>
         Level (L/B/P), Parent, Boxes pr Ctn, Pcs pr Box, Total Pcs — headers se mil jaayenge.
       </p>
-           <div class="field" style="margin-bottom:12px">
+      <div class="field" style="margin-bottom:12px">
         <label>Sheet File (xlsx, xls, csv, txt) *</label>
         <div class="file-upload">
           <label class="up-btn" for="r_sheet">📂 &nbsp;Choose File</label>
@@ -95,8 +93,8 @@ $page = 'products';
         </div>
       </div>
       <div class="field" style="margin-bottom:12px">
-        <button class="btn btn-ok" id="btnPreview">Preview</button>
-        <button class="btn" id="btnSheetUpload" disabled>Upload &amp; Register Sheet</button>
+        <button class="btn green" id="btnPreview">Preview</button>
+        <button class="btn red" id="btnSheetUpload" disabled>Upload &amp; Register Sheet</button>
       </div>
       <!-- Progress bar -->
       <div class="progress-wrap" id="progressWrap">
