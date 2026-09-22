@@ -168,7 +168,7 @@ function renderItems(list){
           '<svg class="bc-svg" data-bc="'+esc(b)+'"></svg>'+
           '<span class="bc-num mono">'+esc(b)+'</span>'+
         '</div>'+
-        '<button class="del-bc-btn" data-barcode="'+esc(b)+'" title="Delete barcode">Del</button>'+
+'<button type="button" class="del-bc-btn" data-barcode="'+esc(b)+'" title="Delete barcode">Del</button>'+
       '</div>';
     }).join('');
     return '<div class="ctn-item">'+
