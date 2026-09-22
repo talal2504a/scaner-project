@@ -158,7 +158,7 @@ function renderItems(list){
   if(!box) return;
   if(!list || !list.length){ box.innerHTML='<span class="dash">Abhi koi item register nahi hua.</span>'; return; }
   box.innerHTML = list.map(function(it){
-      var bcs = String(it.barcodes||'').split('|').filter(function(x){ return x !== ''; }).map(function(x){
+    var bcs = String(it.barcodes||'').split('|').filter(function(x){ return x !== ''; }).map(function(x){
       var i = x.indexOf(':');
       return i > 0 ? x.substring(i+1) : x;
     });
@@ -168,14 +168,14 @@ function renderItems(list){
           '<svg class="bc-svg" data-bc="'+esc(b)+'"></svg>'+
           '<span class="bc-num mono">'+esc(b)+'</span>'+
         '</div>'+
-'<button type="button" class="del-bc-btn" data-barcode="'+esc(b)+'" title="Delete barcode">Del</button>'+
+        '<button type="button" class="del-bc-btn" data-barcode="'+esc(b)+'" title="Delete barcode">Del</button>'+
       '</div>';
     }).join('');
     return '<div class="ctn-item">'+
       '<div class="ctn-head" data-code="'+esc(it.item_code)+'" onclick="toggleCtnEvent(event,this)">'+
         '<div><div class="name">'+esc(it.item_name)+'</div>'+
         '<div class="meta">'+esc(it.item_code)+' · Stock: '+esc(it.current_stock_pcs)+' pcs</div></div>'+
-        '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button class="del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#10095;</span></div>'+
+        '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button type="button" class="del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#10095;</span></div>'+
       '</div>'+
       '<div class="ctn-body">'+
         '<div class="bc-code-chip">Item Code: <b>'+esc(it.item_code)+'</b></div>'+
@@ -192,12 +192,12 @@ function renderItems(list){
           displayValue:false, background:'#ffffff', lineColor:'#000000'
         });
       }catch(e){ svg.style.display='none'; }
-})(svgs[i]);
+    })(svgs[i]);
   }
 }
-function deleteBc(barcode){
-  if(!confirm('Delete this barcode and reverse its stock?')) return;
-  fetch('../ajax/delete_barcode.php?barcode='+encodeURIComponent(barcode))
+function deleteItem(code){
+  if(!confirm('Delete this product and ALL its stock?')) return;
+  fetch('../ajax/delete_product.php?item_code='+encodeURIComponent(code))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if(!d.success){ alert(d.message || 'Delete failed.'); return; }
@@ -209,7 +209,11 @@ function deleteBc(barcode){
   if(!confirm('Delete this barcode and reverse its stock?')) return;
   fetch('../ajax/delete_barcode.php?barcode='+encodeURIComponent(barcode))
     .then(function(r){ return r.json(); })
-    .then(function(d){ if(d.success){ var line=document.querySelector('.ctn-line[data-barcode="'+barcode+'"]'); if(line){ var body=line.closest('.ctn-body'); line.remove(); if(body&&!body.querySelector('.ctn-line')) body.innerHTML='<span class="dash">No barcodes.</span>'; } } });
+    .then(function(d){
+      if(!d.success){ alert(d.message || 'Delete failed.'); return; }
+      refreshDashboard();   // AJAX se fresh — no page reload
+    })
+    .catch(function(){ alert('Delete error.'); });
 }
 function refreshDashboard(){
   /* Items + CTN counts */
