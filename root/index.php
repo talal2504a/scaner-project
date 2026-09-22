@@ -195,9 +195,9 @@ function renderItems(list){
 })(svgs[i]);
   }
 }
-function deleteItem(code){
-  if(!confirm('Delete this product and ALL its stock?')) return;
-  fetch('../ajax/delete_product.php?item_code='+encodeURIComponent(code))
+function deleteBc(barcode){
+  if(!confirm('Delete this barcode and reverse its stock?')) return;
+  fetch('../ajax/delete_barcode.php?barcode='+encodeURIComponent(barcode))
     .then(function(r){ return r.json(); })
     .then(function(d){
       if(!d.success){ alert(d.message || 'Delete failed.'); return; }
@@ -210,6 +210,24 @@ function deleteBc(barcode){
   fetch('../ajax/delete_barcode.php?barcode='+encodeURIComponent(barcode))
     .then(function(r){ return r.json(); })
     .then(function(d){ if(d.success){ var line=document.querySelector('.ctn-line[data-barcode="'+barcode+'"]'); if(line){ var body=line.closest('.ctn-body'); line.remove(); if(body&&!body.querySelector('.ctn-line')) body.innerHTML='<span class="dash">No barcodes.</span>'; } } });
+}
+function refreshDashboard(){
+  /* Items + CTN counts */
+  ajax('../ajax/dashboard_items.php', function(d){
+    if(d && d.success) renderItems(d.data);
+  });
+  /* Stats cards + Recent Activity */
+  ajax('../ajax/dashboard_stats.php', function(d){
+    if(!d.success) return;
+    var s = d.data;
+    $('stats').innerHTML =
+      '<div class="stat-card"><div class="label">Total Products</div><div class="value">'+s.total_products+'</div></div>'+
+      '<div class="stat-card"><div class="label">Total Stock</div><div class="value">'+s.total_stock+'</div></div>'+
+      '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">+'+s.total_in+'</div></div>'+
+      '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">-'+s.total_out+'</div></div>'+
+      '<div class="stat-card"><div class="label">Low Stock Items</div><div class="value amber">'+s.low_stock+'</div></div>';
+    renderRecent(s.recent);
+  });
 }
 $('ctnList').addEventListener('click', function(e){
   var di = e.target.closest('.del-item');
