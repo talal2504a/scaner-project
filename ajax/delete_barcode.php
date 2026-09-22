@@ -15,24 +15,22 @@ $pcs = (int)$bc['pcs_qty'];
 $item_code = $bc['item_code'];
 $isConsumed = (int)($bc['is_consumed'] ?? 0);
 
-// Agar barcode available hai (stock-out nahi hua), toh stock-in reverse karo
+// Stock reverse (agar available ho)
 if ($isConsumed === 0 && $pcs > 0) {
     $upd = $conn->prepare("UPDATE products SET current_stock_pcs = current_stock_pcs - ? WHERE item_code = ?");
     $upd->bind_param('is', $pcs, $item_code);
     $upd->execute();
 }
 
-// Stock_in cleanup + barcode delete (proper steps — chain mat karo)
+// DATABASE SE DELETE — teeno jagah se:
 $d1 = $conn->prepare("DELETE FROM stock_in WHERE barcode = ?");
 $d1->bind_param('s', $barcode);
 $d1->execute();
 
-// Stock_out history bhi clean (consumed barcode ke liye)
 $d2 = $conn->prepare("DELETE FROM stock_out WHERE barcode = ?");
 $d2->bind_param('s', $barcode);
 $d2->execute();
 
-// Barcode delete
 $d3 = $conn->prepare("DELETE FROM barcodes WHERE barcode = ?");
 $d3->bind_param('s', $barcode);
 $d3->execute();
