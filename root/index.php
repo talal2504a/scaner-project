@@ -180,16 +180,18 @@ function renderRecent(list){
 
 /* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
 /* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
-function toggleCtn(head){
+/* ---- Items / Cartons: HOVER pe khule, hover hatao toh band ---- */
+function openCtn(head){
   var body = head.nextElementSibling;
   if(!body) return;
-  var open = body.classList.contains('open');
-  body.classList.toggle('open', !open);
-  head.classList.toggle('open', !open);
+  body.classList.add('open');
+  head.classList.add('open');
 }
-function toggleCtnEvent(e, el){
-  if(e.target.closest('.del-item') || e.target.closest('.del-bc-btn')) return;
-  toggleCtn(el);
+function closeCtn(head){
+  var body = head.nextElementSibling;
+  if(!body) return;
+  body.classList.remove('open');
+  head.classList.remove('open');
 }
 /* ---- Delete Confirmation Modal ---- */
 var delPending = null;
