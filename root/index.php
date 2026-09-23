@@ -138,10 +138,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
         <h1>Dashboard</h1>
         <p class="desc">Stock In / Out ka quick overview</p>
       </div>
-      <div style="display:flex;gap:10px">
-        <a class="btn green" href="stock-in.php">+ Stock In</a>
-    <a class="btn red" href="stock-out.php">Scan / Stock Out</a>
-      </div>
+         <div style="display:flex;gap:10px"></div>
     </div>
 
     <div id="msgBox" class="msg-box"></div>
