@@ -179,6 +179,7 @@ function renderRecent(list){
 }
 
 /* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
+/* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
 function toggleCtn(head){
   var body = head.nextElementSibling;
   if(!body) return;
