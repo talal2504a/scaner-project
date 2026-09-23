@@ -25,7 +25,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <title>Dashboard — Diwan International Pvt Ltd</title>
 <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime('assets/css/style.css'); ?>">
 <style>
-  /* ---- Delete Confirmation Modal ---- */
+/* ---- Delete Confirmation Modal ---- */
 .del-modal-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
   background:rgba(0,0,0,.72);z-index:2000;
@@ -53,7 +53,9 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 }
 .del-modal-actions{display:flex;gap:10px}
 .del-modal-actions .btn{flex:1}
-  .bc-code-chip{
+
+/* ---- Items / Cartons ---- */
+.bc-code-chip{
   font-size:12px;color:var(--muted);background:var(--panel-2);
   border:1px solid var(--line);border-radius:7px;padding:5px 10px;
   margin:8px 0 8px 0;display:inline-block;
@@ -77,7 +79,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
   font-family:'Inter',sans-serif;transition:all .15s;
 }
 .del-item:hover{background:#42161A;color:#FF4D5E;border-color:#FF4D5E}
-/* ---- Items / Cartons panel (dashboard) ---- */
+.ctn-item{border-radius:8px}
 .ctn-head{
   display:flex;justify-content:space-between;align-items:center;padding:10px 0;
   border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;
@@ -106,18 +108,13 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
   transition:opacity .25s ease,transform .25s ease,background .15s;
 }
 .ctn-body.open .ctn-line{opacity:1;transform:translateX(0)}
-.ctn-body.open .ctn-line:nth-child(1){transition-delay:.05s}
-.ctn-body.open .ctn-line:nth-child(2){transition-delay:.10s}
-.ctn-body.open .ctn-line:nth-child(3){transition-delay:.15s}
-.ctn-body.open .ctn-line:nth-child(4){transition-delay:.20s}
-.ctn-body.open .ctn-line:nth-child(5){transition-delay:.25s}
 .ctn-line:hover{background:rgba(229,20,46,.08)}
-.ctn-line .idx{color:var(--muted);display:inline-block;width:28px}
 </style>
 </head>
 <body>
 <div class="app">
   <?php include 'sidebar.php'; ?>
+
 <!-- Delete Confirmation Modal -->
 <div class="del-modal-overlay" id="delModal">
   <div class="del-modal-box">
@@ -138,7 +135,6 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
         <h1>Dashboard</h1>
         <p class="desc">Stock In / Out ka quick overview</p>
       </div>
-         <div style="display:flex;gap:10px"></div>
     </div>
 
     <div id="msgBox" class="msg-box"></div>
@@ -149,8 +145,8 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
     <div class="grid-2">
       <!-- Items / Cartons (LEFT) -->
       <div class="panel">
-      <h3>Items — Cartons <span>(click kisi bhi row pe — har carton ka real barcode)</span></h3>    
-      <div id="ctnList"><span class="dash">Loading...</span></div>
+        <h3>Items — Cartons <span>(mouse row pe le jaao — har carton ka real barcode)</span></h3>
+        <div id="ctnList"><span class="dash">Loading...</span></div>
       </div>
 
       <!-- Recent Activity (RIGHT) -->
@@ -166,6 +162,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 var DASH_ITEMS = <?php echo $dashItemsJson; ?>;
+
 function renderRecent(list){
   if(!list || !list.length){ $('recentList').innerHTML='<span class="dash">No activity yet.</span>'; return; }
   $('recentList').innerHTML = list.map(function(r){
@@ -178,25 +175,24 @@ function renderRecent(list){
   }).join('');
 }
 
-/* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
-/* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
-/* ---- Items / Cartons: MOUSE hover pe khule, hatao toh band ---- */
-/* ---- Items / Cartons: MOUSE hover pe khule, hatao toh band ---- */
-function openCtn(head){
-  var body = head.nextElementSibling;
+/* ---- Items / Cartons: MOUSE hover — row se barcode tak khula rehta hai ---- */
+function openCtn(item){
+  var body = item.querySelector('.ctn-body');
+  var head = item.querySelector('.ctn-head');
   if(!body) return;
   body.classList.add('open');
-  head.classList.add('open');
+  if(head) head.classList.add('open');
 }
-function closeCtn(head){
-  var body = head.nextElementSibling;
+function closeCtn(item){
+  var body = item.querySelector('.ctn-body');
+  var head = item.querySelector('.ctn-head');
   if(!body) return;
   body.classList.remove('open');
-  head.classList.remove('open');
+  if(head) head.classList.remove('open');
 }
+
 /* ---- Delete Confirmation Modal ---- */
 var delPending = null;
-
 function openDelModal(title, code, msg, type, value){
   $('delModalTitle').textContent = title;
   $('delModalMsg').textContent = msg;
@@ -226,7 +222,6 @@ function deleteItem(code){
 function deleteBc(barcode){
   openDelModal('Delete Barcode', barcode, 'Delete this barcode and reverse its stock? Ye wapas nahi aayega.', 'bc', barcode);
 }
-
 function doDeleteItem(code){
   fetch('../ajax/delete_product.php?item_code='+encodeURIComponent(code))
     .then(function(r){ return r.json(); })
@@ -245,6 +240,7 @@ function doDeleteBc(barcode){
     })
     .catch(function(){ alert('Delete error.'); });
 }
+
 function renderItems(list){
   var box = $('ctnList');
   if(!box) return;
@@ -263,7 +259,7 @@ function renderItems(list){
         '<button type="button" class="del-bc-btn" data-barcode="'+esc(b)+'" title="Delete barcode">Del</button>'+
       '</div>';
     }).join('');
-       return '<div class="ctn-item" onmouseenter="openCtn(this)" onmouseleave="closeCtn(this)">'+
+    return '<div class="ctn-item" onmouseenter="openCtn(this)" onmouseleave="closeCtn(this)">'+
       '<div class="ctn-head" data-code="'+esc(it.item_code)+'">'+
         '<div><div class="name">'+esc(it.item_name)+'</div>'+
         '<div class="meta">'+esc(it.item_code)+' · Stock: '+esc(it.current_stock_pcs)+' pcs</div></div>'+
@@ -289,18 +285,16 @@ function renderItems(list){
 }
 
 function refreshDashboard(){
-  /* Items + CTN counts */
   ajax('../ajax/dashboard_items.php', function(d){
     if(d && d.success) renderItems(d.data);
   });
-  /* Stats cards + Recent Activity */
   ajax('../ajax/dashboard_stats.php', function(d){
     if(!d.success) return;
     var s = d.data;
     $('stats').innerHTML =
       '<div class="stat-card"><div class="label">Total Products</div><div class="value">'+s.total_products+'</div></div>'+
       '<div class="stat-card"><div class="label">Total Stock</div><div class="value">'+s.total_stock+'</div></div>'+
-     '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+'+s.total_in : '0')+'</div></div>'+
+      '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+'+s.total_in : '0')+'</div></div>'+
       '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-'+s.total_out : '0')+'</div></div>'+
       '<div class="stat-card"><div class="label">Low Stock Items</div><div class="value amber">'+s.low_stock+'</div></div>';
     renderRecent(s.recent);
@@ -319,7 +313,7 @@ ajax('../ajax/dashboard_stats.php', function(d){
   $('stats').innerHTML =
     '<div class="stat-card"><div class="label">Total Products</div><div class="value">'+s.total_products+'</div></div>'+
     '<div class="stat-card"><div class="label">Total Stock</div><div class="value">'+s.total_stock+'</div></div>'+
-    '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">+'+s.total_in+'</div></div>'+
+    '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+'+s.total_in : '0')+'</div></div>'+
     '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-'+s.total_out : '0')+'</div></div>'+
     '<div class="stat-card"><div class="label">Low Stock Items</div><div class="value amber">'+s.low_stock+'</div></div>';
   renderRecent(s.recent);
