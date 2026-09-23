@@ -316,7 +316,7 @@ ajax('../ajax/dashboard_stats.php', function(d){
     '<div class="stat-card"><div class="label">Total Products</div><div class="value">'+s.total_products+'</div></div>'+
     '<div class="stat-card"><div class="label">Total Stock</div><div class="value">'+s.total_stock+'</div></div>'+
     '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">+'+s.total_in+'</div></div>'+
-    '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">-'+s.total_out+'</div></div>'+
+    '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-'+s.total_out : '0')+'</div></div>'+
     '<div class="stat-card"><div class="label">Low Stock Items</div><div class="value amber">'+s.low_stock+'</div></div>';
   renderRecent(s.recent);
 });
