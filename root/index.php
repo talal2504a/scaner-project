@@ -181,6 +181,7 @@ function renderRecent(list){
 /* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
 /* ---- Items / Cartons: row click pe smooth toggle (koi button nahi) ---- */
 /* ---- Items / Cartons: MOUSE hover pe khule, hatao toh band ---- */
+/* ---- Items / Cartons: MOUSE hover pe khule, hatao toh band ---- */
 function openCtn(head){
   var body = head.nextElementSibling;
   if(!body) return;
