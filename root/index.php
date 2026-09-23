@@ -260,7 +260,7 @@ function renderItems(list){
       '</div>';
     }).join('');
     return '<div class="ctn-item">'+
-      '<div class="ctn-head" data-code="'+esc(it.item_code)+'" onclick="toggleCtnEvent(event,this)">'+
+    '<div class="ctn-head" data-code="'+esc(it.item_code)+'" onmouseenter="openCtn(this)" onmouseleave="closeCtn(this)">'+
         '<div><div class="name">'+esc(it.item_name)+'</div>'+
         '<div class="meta">'+esc(it.item_code)+' · Stock: '+esc(it.current_stock_pcs)+' pcs</div></div>'+
         '<div class="right"><span class="tag in">'+it.ctn_count+' CTN</span> <button type="button" class="del-item" data-code="'+esc(it.item_code)+'">Del</button> <span class="caret">&#10095;</span></div>'+
