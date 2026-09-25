@@ -27,23 +27,54 @@ $icons = [
   </div>
 </nav>
 
+
 <script>
-/* macOS-style magnify — cursor ke paas wale icon bade hote hain */
+/* macOS-style dock magnify — spring smooth (rAF + cached rects) */
 (function () {
   var inner = document.getElementById('dockInner');
   if (!inner) return;
-  var items = inner.querySelectorAll('.dock-item');
-  var RANGE = 110, MAX = 1.55;
-  inner.addEventListener('mousemove', function (e) {
-    items.forEach(function (it) {
+  var items = Array.prototype.slice.call(inner.querySelectorAll('.dock-item'));
+  var RANGE = 130;     // cursor ka effect range
+  var MAX   = 1.5;     // max zoom
+  var SPEED = 0.22;    // smoothness (0.1 = slow, 0.4 = fast)
+
+  var rects   = items.map(function () { return 0; });
+  var current = items.map(function () { return 1; });
+  var mouseX = null, hovering = false, raf = null;
+
+  /* Rect sirf ek baar / hover start pe measure — har frame pe nahi */
+  function measure() {
+    rects = items.map(function (it) {
       var r = it.getBoundingClientRect();
-      var d = Math.abs(e.clientX - (r.left + r.width / 2));
-      var s = d < RANGE ? 1 + (MAX - 1) * (1 - d / RANGE) : 1;
-      it.style.transform = 'scale(' + s.toFixed(3) + ')';
+      return r.left + r.width / 2;
     });
+  }
+
+  function tick() {
+    var active = false;
+    for (var i = 0; i < items.length; i++) {
+      var t = 1;
+      if (hovering && mouseX !== null) {
+        var d = Math.abs(mouseX - rects[i]);
+        if (d < RANGE) t = 1 + (MAX - 1) * (1 - d / RANGE);
+      }
+      /* smooth lerp — spring jaisa feel */
+      current[i] += (t - current[i]) * SPEED;
+      if (Math.abs(t - current[i]) > 0.002) active = true;
+      items[i].style.transform = 'scale(' + current[i].toFixed(4) + ')';
+    }
+    raf = (hovering || active) ? requestAnimationFrame(tick) : null;
+  }
+
+  inner.addEventListener('mouseenter', function () {
+    hovering = true; measure();
+    if (!raf) raf = requestAnimationFrame(tick);
   });
+  inner.addEventListener('mousemove', function (e) { mouseX = e.clientX; });
   inner.addEventListener('mouseleave', function () {
-    items.forEach(function (it) { it.style.transform = ''; });
+    hovering = false;
+    if (!raf) raf = requestAnimationFrame(tick);
   });
+  window.addEventListener('resize', function () { if (hovering) measure(); });
 })();
 </script>
