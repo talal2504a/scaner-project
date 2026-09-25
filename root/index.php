@@ -109,6 +109,17 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 }
 .ctn-body.open .ctn-line{opacity:1;transform:translateX(0)}
 .ctn-line:hover{background:rgba(229,20,46,.08)}
+
+/* ===== MOTION EFFECTS (ui-motion-effects-vanilla skill) ===== */
+.stat-card.lift{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;}
+.stat-card.lift:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(0,0,0,.35);border-color:var(--amber);}
+.shimmer-text{
+  background:linear-gradient(90deg,#9E9E9E 0%,#fff 45%,#E5142E 60%,#9E9E9E 100%);
+  background-size:200% auto;-webkit-background-clip:text;background-clip:text;
+  color:transparent;-webkit-text-fill-color:transparent;
+  animation:shimmer 3s linear infinite;
+}
+@keyframes shimmer{to{background-position:-200% center;}}
 </style>
 </head>
 <body>
@@ -132,7 +143,7 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
   <main>
     <div class="pagehead">
       <div>
-        <h1>Dashboard</h1>
+        <h1 class="shimmer-text">Dashboard</h1>
         <p class="desc">Stock In / Out ka quick overview</p>
       </div>
     </div>
@@ -162,6 +173,23 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 var DASH_ITEMS = <?php echo $dashItemsJson; ?>;
+
+/* ===== MOTION: Animated Counter (ui-motion-effects-vanilla skill) ===== */
+function runCounters(){
+  document.querySelectorAll('.count-up').forEach(function(el){
+    if(el.dataset.done) return;
+    el.dataset.done = '1';
+    var t = parseInt(el.dataset.target, 10) || 0;
+    var d = 1000, s = Date.now();
+    (function tick(){
+      var p = Math.min((Date.now() - s) / d, 1);
+      var v = Math.floor(p * t);
+      el.textContent = v;
+      if(p < 1) requestAnimationFrame(tick);
+      else el.textContent = t;
+    })();
+  });
+}
 
 function renderRecent(list){
   if(!list || !list.length){ $('recentList').innerHTML='<span class="dash">No activity yet.</span>'; return; }
@@ -292,11 +320,12 @@ function refreshDashboard(){
     if(!d.success) return;
     var s = d.data;
     $('stats').innerHTML =
-      '<div class="stat-card"><div class="label">Total Products</div><div class="value">'+s.total_products+'</div></div>'+
-      '<div class="stat-card"><div class="label">Total Stock</div><div class="value">'+s.total_stock+'</div></div>'+
-      '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+'+s.total_in : '0')+'</div></div>'+
-      '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-'+s.total_out : '0')+'</div></div>'+
-      '<div class="stat-card"><div class="label">Low Stock Items</div><div class="value amber">'+s.low_stock+'</div></div>';
+      '<div class="stat-card lift"><div class="label">Total Products</div><div class="value"><span class="count-up" data-target="'+s.total_products+'">0</span></div></div>'+
+      '<div class="stat-card lift"><div class="label">Total Stock</div><div class="value"><span class="count-up" data-target="'+s.total_stock+'">0</span></div></div>'+
+      '<div class="stat-card lift"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+' : '')+'<span class="count-up" data-target="'+s.total_in+'">0</span></div></div>'+
+      '<div class="stat-card lift"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-' : '')+'<span class="count-up" data-target="'+s.total_out+'">0</span></div></div>'+
+      '<div class="stat-card lift"><div class="label">Low Stock Items</div><div class="value amber"><span class="count-up" data-target="'+s.low_stock+'">0</span></div></div>';
+    runCounters();
     renderRecent(s.recent);
   });
 }
@@ -311,11 +340,12 @@ ajax('../ajax/dashboard_stats.php', function(d){
   if(!d.success) return;
   var s = d.data;
   $('stats').innerHTML =
-    '<div class="stat-card"><div class="label">Total Products</div><div class="value">'+s.total_products+'</div></div>'+
-    '<div class="stat-card"><div class="label">Total Stock</div><div class="value">'+s.total_stock+'</div></div>'+
-    '<div class="stat-card"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+'+s.total_in : '0')+'</div></div>'+
-    '<div class="stat-card"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-'+s.total_out : '0')+'</div></div>'+
-    '<div class="stat-card"><div class="label">Low Stock Items</div><div class="value amber">'+s.low_stock+'</div></div>';
+    '<div class="stat-card lift"><div class="label">Total Products</div><div class="value"><span class="count-up" data-target="'+s.total_products+'">0</span></div></div>'+
+    '<div class="stat-card lift"><div class="label">Total Stock</div><div class="value"><span class="count-up" data-target="'+s.total_stock+'">0</span></div></div>'+
+    '<div class="stat-card lift"><div class="label">Total Stock In</div><div class="value green">'+(s.total_in>0 ? '+' : '')+'<span class="count-up" data-target="'+s.total_in+'">0</span></div></div>'+
+    '<div class="stat-card lift"><div class="label">Total Stock Out</div><div class="value rust">'+(s.total_out>0 ? '-' : '')+'<span class="count-up" data-target="'+s.total_out+'">0</span></div></div>'+
+    '<div class="stat-card lift"><div class="label">Low Stock Items</div><div class="value amber"><span class="count-up" data-target="'+s.low_stock+'">0</span></div></div>';
+  runCounters();
   renderRecent(s.recent);
 });
 
