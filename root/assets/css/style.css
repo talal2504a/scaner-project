@@ -53,15 +53,21 @@ h1,h2,h3,.num,.mono{font-family:'Sora',sans-serif;}
   display: flex; justify-content: center;
   z-index: 100;
 }
+
 .dock-inner {
   display: flex; gap: 10px;
   padding: 8px 14px;
-  background: rgba(18,18,20,.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: #121214;              /* solid — blur flicker fix */
   border: 1px solid var(--line);
   border-radius: 18px;
   box-shadow: 0 14px 38px rgba(0,0,0,.55);
+  contain: layout paint;            /* repaint sirf dock tak limited */
+}
+
+.dock-item {
+  /* ... existing sab ... */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .dock-item {
   position: relative;
