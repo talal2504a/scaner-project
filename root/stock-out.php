@@ -224,7 +224,6 @@ $('btnSubmitOut').addEventListener('click', function(){
 });
 
 /* ================= UNDO LAST (MODAL) ================= */
-var undoPending = false;
 function openUndoModal(){
   undoPending = true;
   $('undoModalTitle').textContent = 'Undo Last Stock Out';
