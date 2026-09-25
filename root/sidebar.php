@@ -27,7 +27,6 @@ $icons = [
   </div>
 </nav>
 
-
 <script>
 /* macOS-style dock magnify — spring smooth (rAF + cached rects) */
 (function () {
@@ -36,13 +35,13 @@ $icons = [
   var items = Array.prototype.slice.call(inner.querySelectorAll('.dock-item'));
   var RANGE = 130;     // cursor ka effect range
   var MAX   = 1.5;     // max zoom
-  var SPEED = 0.22;    // smoothness (0.1 = slow, 0.4 = fast)
+  var SPEED = 0.22;    // smoothness (0.1 slow — 0.4 fast)
 
   var rects   = items.map(function () { return 0; });
   var current = items.map(function () { return 1; });
   var mouseX = null, hovering = false, raf = null;
 
-  /* Rect sirf ek baar / hover start pe measure — har frame pe nahi */
+  /* Rect sirf hover start pe measure — har frame pe nahi (perf) */
   function measure() {
     rects = items.map(function (it) {
       var r = it.getBoundingClientRect();
@@ -58,23 +57,13 @@ $icons = [
         var d = Math.abs(mouseX - rects[i]);
         if (d < RANGE) t = 1 + (MAX - 1) * (1 - d / RANGE);
       }
-      /* smooth lerp — spring jaisa feel */
       current[i] += (t - current[i]) * SPEED;
       if (Math.abs(t - current[i]) > 0.002) active = true;
       items[i].style.transform = 'scale(' + current[i].toFixed(4) + ')';
     }
     raf = (hovering || active) ? requestAnimationFrame(tick) : null;
   }
-/* Prefetch — hover pe page pehle se load, click pe instant */
-items.forEach(function (it) {
-  it.addEventListener('mouseenter', function () {
-    var href = it.getAttribute('href');
-    if (!href) return;
-    var l = document.createElement('link');
-    l.rel = 'prefetch'; l.href = href;
-    if (!document.querySelector('link[href="' + href + '"]')) document.head.appendChild(l);
-  });
-});
+
   inner.addEventListener('mouseenter', function () {
     hovering = true; measure();
     if (!raf) raf = requestAnimationFrame(tick);
@@ -85,5 +74,18 @@ items.forEach(function (it) {
     if (!raf) raf = requestAnimationFrame(tick);
   });
   window.addEventListener('resize', function () { if (hovering) measure(); });
+
+  /* Prefetch — hover pe page pehle se cache, click pe instant (no blink) */
+  items.forEach(function (it) {
+    it.addEventListener('mouseenter', function () {
+      var href = it.getAttribute('href');
+      if (!href) return;
+      if (document.querySelector('link[rel="prefetch"][href="' + href + '"]')) return;
+      var l = document.createElement('link');
+      l.rel = 'prefetch';
+      l.href = href;
+      document.head.appendChild(l);
+    });
+  });
 })();
 </script>
