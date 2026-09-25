@@ -766,3 +766,13 @@ table .mono{font-size:12.5px;}
 
 /* Modal open ho tab dock upar rahe */
 body.modal-docking .dock { z-index: 1001; pointer-events: none; }
+/* ============ DEL / UNDO MODAL — same dock animation ============ */
+.del-modal-overlay.anim-in  { animation: overlayIn .3s ease-out both; }
+.del-modal-overlay.anim-out { animation: overlayOut .25s ease-in both; }
+.del-modal-box.anim-in  {
+  animation: dialogIn .45s cubic-bezier(.22, 1, .36, 1) both;
+  will-change: transform, opacity;
+}
+.del-modal-box.anim-out {
+  animation: dialogOut .28s cubic-bezier(.4, 0, 1, 1) both;
+}
