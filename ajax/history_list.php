@@ -3,15 +3,18 @@
    ajax/history_list.php — Stock In/Out history
    GET query:
      - type = all | in | out
-     - date = YYYY-MM-DD (optional filter)
-   Koi LIMIT nahi.
+     - month = YYYY-MM (default: current month)
+     - date  = YYYY-MM-DD (exact date filter)
+     - all   = 1 (full history — slow, avoid)
    ============================================================ */
 require_once dirname(__DIR__) . '/config/db.php';
 
-$type = $_GET['type'] ?? 'all';
-$date = $_GET['date'] ?? '';
+$type  = $_GET['type']  ?? 'all';
+$date  = $_GET['date']  ?? '';
+$month = $_GET['month'] ?? '';
+$all   = isset($_GET['all']) && $_GET['all'] === '1';
 
-/* Type ke hisaab se base query (naye columns: barcode, level, pcs_qty) */
+/* Type ke hisaab se base query */
 if ($type === 'in') {
     $sql = "SELECT 'in' AS rec_type, id, barcode, level, item_code, item_name, pcs_qty, source, remark, entry_date FROM stock_in";
 } elseif ($type === 'out') {
@@ -22,11 +25,22 @@ if ($type === 'in') {
             (SELECT 'out' AS rec_type, id, barcode, level, item_code, item_name, pcs_qty, source, remark, entry_date FROM stock_out)";
 }
 
-/* Date filter (safe: real_escape_string) */
+/* Filter: exact date > month > default current month > all */
+$esc = function ($v) use ($conn) { return $conn->real_escape_string($v); };
+
 if ($date !== '') {
-    $sql .= " WHERE DATE(entry_date) = '" . $conn->real_escape_string($date) . "'";
+    $sql .= " WHERE DATE(entry_date) = '" . $esc($date) . "'";
+} elseif ($month !== '') {
+    $sql .= " WHERE entry_date LIKE '" . $esc($month) . "%'";
+} elseif (!$all) {
+    /* Default: current month — 10k rows dump nahi hoga */
+    $sql .= " WHERE entry_date LIKE '" . $esc(date('Y-m')) . "%'";
 }
+
 $sql .= " ORDER BY entry_date DESC";
+
+/* all=1 chhodo, warna max 5000 (display list hai, counters alag hain) */
+if (!$all) $sql .= " LIMIT 5000";
 
 $res  = $conn->query($sql);
 $data = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
