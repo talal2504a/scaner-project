@@ -62,12 +62,11 @@
 
 <script src="assets/js/app.js?v=<?php echo filemtime('assets/js/app.js'); ?>"></script>
 <script>
-function loadHistory(){
-  var type = $('fType').value;
-  var date = $('fDate').value;
-  var url = '../ajax/history_list.php?type=' + encodeURIComponent(type);
-  if (date) url += '&date=' + encodeURIComponent(date);
-  fetch(url)
+$('btnReset').addEventListener('click', function(){
+  $('fType').value = 'all';
+  $('fMonth').value = '';
+  loadHistory();
+});
     .then(function(r){ return r.json(); })
     .then(function(d){
       var list = d.data || [];
