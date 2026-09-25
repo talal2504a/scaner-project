@@ -225,7 +225,6 @@ $('btnSubmitOut').addEventListener('click', function(){
 
 /* ================= UNDO LAST (MODAL) ================= */
 var undoPending = false;
-
 function openUndoModal(){
   undoPending = true;
   $('undoModalTitle').textContent = 'Undo Last Stock Out';
@@ -251,6 +250,22 @@ function closeUndoModal(){
   }, 300);
   undoPending = false;
 }
+$('undoModalConfirm').addEventListener('click', function(){
+  if(!undoPending) return;
+  undoPending = false;
+  closeUndoModal();
+  doUndoLast();
+});
+$('undoModal').addEventListener('click', function(e){
+  if(e.target === this) closeUndoModal();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && undoPending) closeUndoModal();
+});
+
+$('btnUndoLast').addEventListener('click', function(){
+  openUndoModal();
+});
 function doUndoLast(){
   var fd = new FormData();   /* koi barcode nahi — server last uthayega */
   fetch('../ajax/undo_stock_out.php', { method: 'POST', body: fd })
