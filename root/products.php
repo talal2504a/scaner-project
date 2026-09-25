@@ -183,8 +183,27 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
       });
     }
-    function openReg() { $('regModal').style.display = 'flex'; }
-    function closeReg() { $('regModal').style.display = 'none'; $('regMsgBox').className = 'msg-box'; }
+   function openReg() {
+  var m = $('regModal');
+  var box = m.querySelector('.modal-box');
+  m.classList.remove('anim-out');
+  m.classList.add('anim-in');
+  if (box){ box.classList.remove('anim-out'); box.classList.add('anim-in'); }
+  document.body.classList.add('modal-docking');
+  m.style.display = 'flex';
+}
+function closeReg() {
+  var m = $('regModal');
+  var box = m.querySelector('.modal-box');
+  m.classList.add('anim-out');
+  m.classList.remove('anim-in');
+  if (box){ box.classList.add('anim-out'); box.classList.remove('anim-in'); }
+  setTimeout(function(){
+    m.style.display = 'none';
+    document.body.classList.remove('modal-docking');
+  }, 300);
+  $('regMsgBox').className = 'msg-box';
+}
     function showPan(t) {
       if (t === 'manual') {
         $('panelManual').style.display = '';
