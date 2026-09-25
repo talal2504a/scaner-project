@@ -284,7 +284,10 @@ function openScanModal(){
 function closeScanModal(){
   scanModalOpen = false;
   scanPauseStop();
-  $('scanModal').style.display = 'none';
+  var m = $('scanModal');
+  m.classList.add('anim-out');
+  m.classList.remove('anim-in');
+  setTimeout(function(){ m.style.display = 'none'; }, 360);
   scanUnlocked = false;
   scanBuffer = '';
   setScanLockUI();
