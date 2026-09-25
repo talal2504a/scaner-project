@@ -121,7 +121,12 @@ $dashItemsJson = json_encode($dashItems, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG |
 }
 @keyframes shimmer{to{background-position:-200% center;}}
 </style>
-</head>
+</head 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>>
 <body>
 <div class="app">
   <?php include 'sidebar.php'; ?>
