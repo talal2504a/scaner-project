@@ -219,7 +219,7 @@ function closeCtn(item){
   if(head) head.classList.remove('open');
 }
 
-/* ---- Delete Confirmation Modal ---- */
+/* ---- Delete Confirmation Modal (dock animation) ---- */
 var delPending = null;
 function openDelModal(title, code, msg, type, value){
   $('delModalTitle').textContent = title;
@@ -227,10 +227,24 @@ function openDelModal(title, code, msg, type, value){
   $('delModalCode').style.display = code ? 'inline-block' : 'none';
   $('delModalCode').textContent = code || '';
   delPending = { type: type, value: value };
-  $('delModal').classList.add('open');
+  var m = $('delModal');
+  var box = m.querySelector('.del-modal-box');
+  m.classList.remove('anim-out');
+  m.classList.add('anim-in');
+  if (box){ box.classList.remove('anim-out'); box.classList.add('anim-in'); }
+  document.body.classList.add('modal-docking');
+  m.classList.add('open');
 }
 function closeDelModal(){
-  $('delModal').classList.remove('open');
+  var m = $('delModal');
+  var box = m.querySelector('.del-modal-box');
+  m.classList.add('anim-out');
+  m.classList.remove('anim-in');
+  if (box){ box.classList.add('anim-out'); box.classList.remove('anim-in'); }
+  setTimeout(function(){
+    m.classList.remove('open');
+    document.body.classList.remove('modal-docking');
+  }, 300);
   delPending = null;
 }
 $('delModalConfirm').addEventListener('click', function(){
