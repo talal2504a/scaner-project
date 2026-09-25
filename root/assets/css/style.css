@@ -47,33 +47,66 @@ h1,h2,h3,.num,.mono{font-family:'Sora',sans-serif;}
 ::-webkit-scrollbar-thumb:hover{background:#555;}
 
 .app{min-height:100vh;}
-
-/* ---------------- SIDEBAR (BLACK) ---------------- */
-.sidebar{
-    width:220px;background:var(--navy);color:#fff;flex-shrink:0;
-    padding:24px 0;display:flex;flex-direction:column;
-    position:fixed;top:0;left:0;height:100vh;overflow-y:auto;
-    border-right:1px solid var(--line);
+/* ---------------- DOCK (BOTTOM, MAC-STYLE) ---------------- */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 14px;
+  display: flex; justify-content: center;
+  z-index: 100;
 }
-.brand{padding:0 20px 22px 20px;border-bottom:1px solid var(--line);margin-bottom:14px;}
-.brand .mark{
-    width:34px;height:34px;border-radius:8px;background:var(--amber);
-    display:flex;align-items:center;justify-content:center;
-    font-family:'Sora',sans-serif;font-weight:700;color:#fff;margin-bottom:10px;
+.dock-inner {
+  display: flex; gap: 10px;
+  padding: 8px 14px;
+  background: rgba(18,18,20,.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(0,0,0,.55);
 }
-.brand .name{font-family:'Sora',sans-serif;font-weight:700;font-size:15px;text-align:center;line-height:1.3;color:#fff;}
-.brand .sub{font-size:11.5px;color:var(--muted);margin-top:2px;text-align:center;}
-nav{display:flex;flex-direction:column;padding:0 10px;gap:2px;}
-.nav-item{
-    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
-    color:var(--muted);font-size:13.5px;font-weight:500;text-decoration:none;
-    transition:background .15s,color .15s;
+.dock-item {
+  position: relative;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background .15s, color .15s, transform .1s;
+  transform-origin: bottom center;
+  will-change: transform;
 }
-.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;}
-.nav-item.active{background:rgba(229,20,46,.16);color:var(--amber);}
-.nav-item .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7;flex-shrink:0;}
-.sidebar-foot{margin-top:auto;padding:14px 20px 0 20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);}
-
+.dock-item:hover { color: #fff; }
+.dock-item.active {
+  background: rgba(229,20,46,.16);
+  color: var(--amber);
+  border-color: rgba(229,20,46,.4);
+}
+.dock-item.active::after {
+  content: ''; position: absolute; bottom: -7px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--amber);
+}
+.dock-ico { display: flex; width: 22px; height: 22px; }
+.dock-ico svg {
+  width: 100%; height: 100%;
+  fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.dock-tip {
+  position: absolute; bottom: calc(100% + 12px); left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 5px 9px; font-size: 11.5px; font-weight: 600;
+  white-space: nowrap;
+  background: #0A0A0A; color: #fff;
+  border: 1px solid var(--line); border-radius: 7px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s, transform .15s;
+}
+.dock-item:hover .dock-tip {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
 /* ---------------- MAIN LAYOUT ---------------- */
 main{margin-left:220px;padding:28px 34px 60px 34px;box-sizing:border-box;width:calc(100% - 220px);max-width:1500px;}
 .pagehead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
