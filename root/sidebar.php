@@ -28,6 +28,17 @@ $icons = [
 </nav>
 
 <script>
+  /* Google Fonts async (non-blocking) — saare pages pe lagta hai */
+(function(){
+  var css='https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap';
+  if(document.querySelector('link[data-fonts]')) return;
+  var a=document.createElement('link'); a.rel='preconnect'; a.href='https://fonts.googleapis.com';
+  var b=document.createElement('link'); b.rel='preconnect'; b.href='https://fonts.gstatic.com'; b.crossOrigin='';
+  var l=document.createElement('link'); l.rel='stylesheet'; l.media='print'; l.href=css;
+  l.setAttribute('data-fonts','1');
+  l.onload=function(){ this.media='all'; };
+  document.head.appendChild(a); document.head.appendChild(b); document.head.appendChild(l);
+})();
 /* macOS-style dock magnify — spring smooth (rAF + cached rects) */
 (function () {
   var inner = document.getElementById('dockInner');
