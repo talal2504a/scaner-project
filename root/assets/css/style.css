@@ -724,42 +724,40 @@ table .mono{font-size:12.5px;}
 .btn-danger{background:var(--rust-bg);color:var(--rust);border:1.5px solid #5A2026;}
 .btn-danger:hover{background:#42161A;color:#FF4D5E;}
 
-/* ============ DIALOG ANIMATION (motion/react translated) ============ */
-/* Modal dock ke size se nikal kar apni full size me aata hai */
+/* ============ DIALOG ANIMATION (rubber/squash spring) ============ */
+/* Modal dock ke SIZE se (chhota+squash) nikal kar spring se full size */
 @keyframes dialogIn {
   from {
-    transform: translateY(calc(50vh - 44px)) scale(.14);
-    filter: blur(10px);
-    opacity: 0;
+    transform: translateY(calc(50vh - 44px)) scale(.5, .15);
+    filter: blur(8px);
   }
   to {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1, 1);
     filter: blur(0);
-    opacity: 1;
   }
 }
 @keyframes dialogOut {
   from {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1, 1);
     filter: blur(0);
-    opacity: 1;
   }
   to {
-    transform: translateY(calc(50vh - 44px)) scale(.14);
-    filter: blur(10px);
-    opacity: 0;
+    transform: translateY(calc(50vh - 44px)) scale(.5, .15);
+    filter: blur(8px);
   }
 }
 @keyframes overlayIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes overlayOut { from { opacity: 1; } to { opacity: 0; } }
 
-/* Spring-like easing (bounce:0, duration:.4s ≈ critically damped spring) */
-.modal-box.anim-in,
-.modal-box.anim-out { transform-origin: 50% 100%; }
-.modal-overlay.anim-in { animation: overlayIn .4s cubic-bezier(.22,1,.36,1) both; }
-.modal-overlay.anim-out{ animation: overlayOut .35s cubic-bezier(.4,0,1,1) both; }
-.modal-box.anim-in  { animation: dialogIn  .4s cubic-bezier(.22,1,.36,1) both; }
-.modal-box.anim-out { animation: dialogOut .35s cubic-bezier(.4,0,1,1) both; }
+/* Open = bouncy spring (overshoot — rubber ki tarah) */
+.modal-overlay.anim-in  { animation: overlayIn .4s ease-out both; }
+.modal-overlay.anim-out { animation: overlayOut .3s ease-in both; }
+.modal-box.anim-in  {
+  animation: dialogIn .5s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+.modal-box.anim-out {
+  animation: dialogOut .3s cubic-bezier(.4, 0, 1, 1) both;
+}
 
 /* Modal open ho tab dock upar rahe — modal peeche se nikle */
 body.modal-docking .dock { z-index: 1001; pointer-events: none; }

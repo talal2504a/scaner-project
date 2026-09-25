@@ -272,8 +272,7 @@ var scanModalOpen  = false;   // modal khula hai?
 var scanBuffer     = '';      // scanner ka char buffer
 var scanPauseTimer = null;    // bina-Enter scanner ke pause timer
 
-/* Modal open/close */
-/* Modal open/close — spring dialog animation */
+/* Modal open/close — spring dialog animation (dock se) */
 function openScanModal(){
   scanModalOpen = true;
   scanBuffer = '';
@@ -296,7 +295,10 @@ function closeScanModal(){
   m.classList.add('anim-out');
   m.classList.remove('anim-in');
   if (box){ box.classList.add('anim-out'); box.classList.remove('anim-in'); }
-  setTimeout(function(){ m.style.display = 'none'; }, 360);
+  setTimeout(function(){
+    m.style.display = 'none';
+    document.body.classList.remove('modal-docking');
+  }, 360);
   scanUnlocked = false;
   scanBuffer = '';
   setScanLockUI();
