@@ -108,6 +108,7 @@ h1,h2,h3,.num,.mono{font-family:'Sora',sans-serif;}
   opacity: 1; transform: translateX(-50%) translateY(0);
 }
 /* ---------------- MAIN LAYOUT ---------------- */
+/* ---------------- MAIN LAYOUT ---------------- */
 main{margin-left:220px;padding:28px 34px 60px 34px;box-sizing:border-box;width:calc(100% - 220px);max-width:1500px;}
 .pagehead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
 .pagehead h1{font-size:22px;font-weight:600;margin:0 0 4px 0;color:var(--text);}
