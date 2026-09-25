@@ -273,10 +273,16 @@ var scanBuffer     = '';      // scanner ka char buffer
 var scanPauseTimer = null;    // bina-Enter scanner ke pause timer
 
 /* Modal open/close */
+/* Modal open/close — spring dialog animation */
 function openScanModal(){
   scanModalOpen = true;
   scanBuffer = '';
-  $('scanModal').style.display = 'flex';
+  var m = $('scanModal');
+  var box = m.querySelector('.modal-box');
+  m.classList.remove('anim-out');
+  m.classList.add('anim-in');
+  if (box){ box.classList.remove('anim-out'); box.classList.add('anim-in'); }
+  m.style.display = 'flex';
   $('scanInput').value = '';
   loadScanHistory();
   $('scanInput').focus();
@@ -285,14 +291,17 @@ function closeScanModal(){
   scanModalOpen = false;
   scanPauseStop();
   var m = $('scanModal');
+  var box = m.querySelector('.modal-box');
   m.classList.add('anim-out');
   m.classList.remove('anim-in');
+  if (box){ box.classList.add('anim-out'); box.classList.remove('anim-in'); }
   setTimeout(function(){ m.style.display = 'none'; }, 360);
   scanUnlocked = false;
   scanBuffer = '';
   setScanLockUI();
   $('scanInput').value = '';
 }
+
 $('scanModal').addEventListener('click', function(e){
   if (e.target === this) closeScanModal();
 });
