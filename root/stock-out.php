@@ -282,6 +282,7 @@ function openScanModal(){
   m.classList.remove('anim-out');
   m.classList.add('anim-in');
   if (box){ box.classList.remove('anim-out'); box.classList.add('anim-in'); }
+  document.body.classList.add('modal-docking');
   m.style.display = 'flex';
   $('scanInput').value = '';
   loadScanHistory();
