@@ -22,7 +22,7 @@ $todayOut = (int)$conn->query("SELECT COALESCE(SUM(pcs_qty),0) FROM stock_out WH
 $r = $conn->query("(SELECT 'in' AS rec_type, barcode, level, item_code, item_name, pcs_qty, source, remark, entry_date FROM stock_in)
                    UNION ALL
                    (SELECT 'out' AS rec_type, barcode, level, item_code, item_name, pcs_qty, source, remark, entry_date FROM stock_out)
-                   ORDER BY entry_date DESC");
+                   ORDER BY entry_date DESC LIMIT 50");
 $recent = $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
 
 /* ---------- Low stock products (full list) ---------- */
