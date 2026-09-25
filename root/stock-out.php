@@ -231,28 +231,26 @@ function openUndoModal(){
   $('undoModalTitle').textContent = 'Undo Last Stock Out';
   $('undoModalCode').style.display = 'none';
   $('undoModalMsg').textContent = 'Aakhri stock out wapas add ho jayega aur record delete. Sure?';
-  $('undoModal').classList.add('open');
+  var m = $('undoModal');
+  var box = m.querySelector('.del-modal-box');
+  m.classList.remove('anim-out');
+  m.classList.add('anim-in');
+  if (box){ box.classList.remove('anim-out'); box.classList.add('anim-in'); }
+  document.body.classList.add('modal-docking');
+  m.classList.add('open');
 }
 function closeUndoModal(){
-  $('undoModal').classList.remove('open');
+  var m = $('undoModal');
+  var box = m.querySelector('.del-modal-box');
+  m.classList.add('anim-out');
+  m.classList.remove('anim-in');
+  if (box){ box.classList.add('anim-out'); box.classList.remove('anim-in'); }
+  setTimeout(function(){
+    m.classList.remove('open');
+    document.body.classList.remove('modal-docking');
+  }, 300);
   undoPending = false;
 }
-$('undoModalConfirm').addEventListener('click', function(){
-  if(!undoPending) return;
-  undoPending = false;
-  closeUndoModal();
-  doUndoLast();
-});
-$('undoModal').addEventListener('click', function(e){
-  if(e.target === this) closeUndoModal();
-});
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape' && undoPending) closeUndoModal();
-});
-
-$('btnUndoLast').addEventListener('click', function(){
-  openUndoModal();
-});
 function doUndoLast(){
   var fd = new FormData();   /* koi barcode nahi — server last uthayega */
   fetch('../ajax/undo_stock_out.php', { method: 'POST', body: fd })
