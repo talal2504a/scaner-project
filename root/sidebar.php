@@ -65,7 +65,16 @@ $icons = [
     }
     raf = (hovering || active) ? requestAnimationFrame(tick) : null;
   }
-
+/* Prefetch — hover pe page pehle se load, click pe instant */
+items.forEach(function (it) {
+  it.addEventListener('mouseenter', function () {
+    var href = it.getAttribute('href');
+    if (!href) return;
+    var l = document.createElement('link');
+    l.rel = 'prefetch'; l.href = href;
+    if (!document.querySelector('link[href="' + href + '"]')) document.head.appendChild(l);
+  });
+});
   inner.addEventListener('mouseenter', function () {
     hovering = true; measure();
     if (!raf) raf = requestAnimationFrame(tick);
