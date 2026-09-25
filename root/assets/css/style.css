@@ -72,7 +72,7 @@ h1,h2,h3,.num,.mono{font-family:'Sora',sans-serif;}
   border: 1px solid transparent;
   color: var(--muted);
   text-decoration: none;
-  transition: background .15s, color .15s, transform .1s;
+  transition: background .15s, color .15s;
   transform-origin: bottom center;
   will-change: transform;
 }
