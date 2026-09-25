@@ -726,38 +726,43 @@ table .mono{font-size:12.5px;}
 
 /* ============ DIALOG ANIMATION (rubber/squash spring) ============ */
 /* Modal dock ke SIZE se (chhota+squash) nikal kar spring se full size */
+/* ============ DIALOG ANIMATION (smooth squash spring) ============ */
+/* Blur HATA diya — heavy tha, pop jaisa lag raha tha */
 @keyframes dialogIn {
   from {
     transform: translateY(calc(50vh - 44px)) scale(.5, .15);
-    filter: blur(8px);
+    opacity: .5;
   }
   to {
     transform: translateY(0) scale(1, 1);
-    filter: blur(0);
+    opacity: 1;
   }
 }
 @keyframes dialogOut {
   from {
     transform: translateY(0) scale(1, 1);
-    filter: blur(0);
+    opacity: 1;
   }
   to {
     transform: translateY(calc(50vh - 44px)) scale(.5, .15);
-    filter: blur(8px);
+    opacity: .5;
   }
 }
 @keyframes overlayIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes overlayOut { from { opacity: 1; } to { opacity: 0; } }
 
-/* Open = bouncy spring (overshoot — rubber ki tarah) */
-.modal-overlay.anim-in  { animation: overlayIn .4s ease-out both; }
-.modal-overlay.anim-out { animation: overlayOut .3s ease-in both; }
+/* Overlay = quick fade */
+.modal-overlay.anim-in  { animation: overlayIn .3s ease-out both; }
+.modal-overlay.anim-out { animation: overlayOut .25s ease-in both; }
+
+/* Box = smooth dock se expand (bouncy OFF — pop khatam) */
 .modal-box.anim-in  {
-  animation: dialogIn .5s cubic-bezier(.34, 1.56, .64, 1) both;
+  animation: dialogIn .45s cubic-bezier(.22, 1, .36, 1) both;
+  will-change: transform, opacity;
 }
 .modal-box.anim-out {
-  animation: dialogOut .3s cubic-bezier(.4, 0, 1, 1) both;
+  animation: dialogOut .28s cubic-bezier(.4, 0, 1, 1) both;
 }
 
-/* Modal open ho tab dock upar rahe — modal peeche se nikle */
+/* Modal open ho tab dock upar rahe */
 body.modal-docking .dock { z-index: 1001; pointer-events: none; }
